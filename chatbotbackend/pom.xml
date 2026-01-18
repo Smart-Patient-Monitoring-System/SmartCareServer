@@ -7,7 +7,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
     <artifactId>chatbotbackend</artifactId>
-    <name>Archetype - chatbotbackend</name>
+    <name>Archetype - chatbot backend</name>
     <url>http://maven.apache.org</url>
 
     <dependencies>
