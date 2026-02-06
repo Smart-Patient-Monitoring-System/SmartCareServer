@@ -98,4 +98,29 @@ public class SensorDataController {
                 "service", "Sensor Data API"
         ));
     }
+
+    @GetMapping("/latest/{limit}/with-status")
+    public ResponseEntity<?> getLatestWithStatus(@PathVariable int limit) {
+        List<SensorData> data = service.getLatestData(limit);
+        if (data.isEmpty()) {
+            return ResponseEntity.ok(Map.of(
+                    "data", List.of(),
+                    "stale", true,
+                    "ageSeconds", null,
+                    "latestTimestamp", null
+            ));
+        }
+
+        SensorData latest = data.get(0); // because repository returns DESC
+        long ageSeconds = java.time.Duration.between(latest.getReceivedAt(), LocalDateTime.now()).getSeconds();
+        boolean stale = ageSeconds > 30; // choose threshold
+
+        return ResponseEntity.ok(Map.of(
+                "data", data,
+                "latestTimestamp", latest.getReceivedAt(),
+                "ageSeconds", ageSeconds,
+                "stale", stale
+        ));
+    }
+
 }

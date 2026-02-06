@@ -38,7 +38,7 @@ public class Patient {
     @Column(nullable = false)
     private String contactNo;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String guardiansName;
 
     @Column(nullable = false)
@@ -83,6 +83,9 @@ public class Patient {
 
     @Column(length = 1000)
     private String currentMedications;
+
+    @Column(length = 1000)
+    private String pastSurgeries;
 
     @Column(name = "emergency_notes", length = 1000)
     private String emergencyNotes;

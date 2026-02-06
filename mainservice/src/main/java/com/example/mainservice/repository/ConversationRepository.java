@@ -15,26 +15,26 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     /**
      * Find all conversations for a patient
      */
-    List<Conversation> findByPatientIdOrderByTimestampDesc(Integer patientId);
+    List<Conversation> findByPatientIdOrderByTimestampDesc(Long patientId);
 
     /**
      * Find all conversations for a doctor
      */
-    List<Conversation> findByDoctorIdOrderByTimestampDesc(Integer doctorId);
+    List<Conversation> findByDoctorIdOrderByTimestampDesc(Long doctorId);
 
     /**
      * Find conversation between a specific patient and doctor
      */
-    Optional<Conversation> findByPatientIdAndDoctorId(Integer patientId, Integer doctorId);
+    Optional<Conversation> findByPatientIdAndDoctorId(Long patientId, Long doctorId);
 
     /**
      * Find all conversations for a user (either as patient or doctor)
      */
     @Query("SELECT c FROM Conversation c WHERE c.patientId = :userId OR c.doctorId = :userId ORDER BY c.timestamp DESC")
-    List<Conversation> findAllByUserId(@Param("userId") Integer userId);
+    List<Conversation> findAllByUserId(@Param("userId") Long userId);
 
     /**
      * Check if conversation exists between patient and doctor
      */
-    boolean existsByPatientIdAndDoctorId(Integer patientId, Integer doctorId);
+    boolean existsByPatientIdAndDoctorId(Long patientId, Long doctorId);
 }

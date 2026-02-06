@@ -19,7 +19,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
      */
     List<ChatMessage> findByConversationIdAndReceiverIdAndReadFalse(
             Long conversationId,
-            Integer receiverId
+            Long receiverId
     );
 
     /**
@@ -27,16 +27,16 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
      */
     Integer countByConversationIdAndReceiverIdAndReadFalse(
             Long conversationId,
-            Integer receiverId
+            Long receiverId
     );
 
     /**
      * Find all unread messages for a specific user across all conversations
      */
-    List<ChatMessage> findByReceiverIdAndReadFalse(Integer receiverId);
+    List<ChatMessage> findByReceiverIdAndReadFalse(Long receiverId);
 
     /**
      * Count total unread messages for a user
      */
-    Integer countByReceiverIdAndReadFalse(Integer receiverId);
+    Integer countByReceiverIdAndReadFalse(Long receiverId);
 }

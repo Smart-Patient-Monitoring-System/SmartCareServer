@@ -15,11 +15,11 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/vital-signs")
-@CrossOrigin(
-        origins = "http://localhost:5173",
-        allowedHeaders = "*",
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE, RequestMethod.OPTIONS}
-)
+//@CrossOrigin(
+//        origins = "http://localhost:5173",
+//        allowedHeaders = "*",
+//        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE, RequestMethod.OPTIONS}
+//)
 public class VitalSignsController {
 
     private static final Logger logger = LoggerFactory.getLogger(VitalSignsController.class);

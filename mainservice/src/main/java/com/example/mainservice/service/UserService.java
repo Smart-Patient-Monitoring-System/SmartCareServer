@@ -28,8 +28,13 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        String identifier = (username == null) ? "" : username.trim();
+
         // Try admin first (highest priority)
-        Admin admin = adminRepo.findByUsername(username).orElse(null);
+        Admin admin = adminRepo.findByUsername(identifier).orElse(null);
+        if (admin == null) {
+            admin = adminRepo.findByEmail(identifier).orElse(null);
+        }
         if (admin != null) {
             return new CustomUserDetails(
                     admin.getId(),
@@ -42,7 +47,10 @@ public class UserService implements UserDetailsService {
         }
 
         // Try doctor
-        Doctor doctor = doctorRepo.findByUsername(username).orElse(null);
+        Doctor doctor = doctorRepo.findByUsername(identifier).orElse(null);
+        if (doctor == null) {
+            doctor = doctorRepo.findByEmail(identifier).orElse(null);
+        }
         if (doctor != null) {
             return new CustomUserDetails(
                     doctor.getId(),
@@ -55,7 +63,10 @@ public class UserService implements UserDetailsService {
         }
 
         // Then patient
-        Patient patient = patientRepo.findByUsername(username).orElse(null);
+        Patient patient = patientRepo.findByUsername(identifier).orElse(null);
+        if (patient == null) {
+            patient = patientRepo.findByEmail(identifier).orElse(null);
+        }
         if (patient != null) {
             return new CustomUserDetails(
                     patient.getId(),
@@ -67,6 +78,6 @@ public class UserService implements UserDetailsService {
             );
         }
 
-        throw new UsernameNotFoundException("User not found with username: " + username);
+        throw new UsernameNotFoundException("User not found with email: " + identifier);
     }
 }

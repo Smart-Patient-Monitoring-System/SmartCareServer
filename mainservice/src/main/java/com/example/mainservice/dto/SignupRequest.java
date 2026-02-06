@@ -43,12 +43,20 @@ public class SignupRequest {
     
     @NotBlank(message = "Guardian Name is required")
     private String guardianName;
+
+    @NotBlank(message = "Guardian Type is required")
+    private String guardianType; // SPOUSE, PARENT, CHILD
     
     @NotBlank(message = "Guardian Contact No is required")
     private String guardianContactNo;
     
     @NotBlank(message = "Blood Type is required")
     private String bloodType;
+
+    // New medical history fields (optional for signup)
+    private String currentAllergies;
+    private String currentMedications;
+    private String pastSurgeries;
 
     @NotBlank(message = "Role is required")
     private String role; // PATIENT, DOCTOR, NURSE, ADMIN

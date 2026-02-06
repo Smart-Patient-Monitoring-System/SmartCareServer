@@ -23,13 +23,13 @@ public class ConversationDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class UserInfo {
-        private Integer id;
+        private Long id;
         private String name;
         private String avatar;
         private Boolean online;
         private String role;
 
-        public UserInfo(Integer id, String name, String avatar, Boolean online) {
+        public UserInfo(Long id, String name, String avatar, Boolean online) {
             this.id = id;
             this.name = name;
             this.avatar = avatar;

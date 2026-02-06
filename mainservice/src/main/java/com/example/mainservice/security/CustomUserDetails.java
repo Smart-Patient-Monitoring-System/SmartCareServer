@@ -63,8 +63,9 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return username;
+        return email; // IMPORTANT: match JWT "sub"
     }
+
 
     @Override
     public boolean isAccountNonExpired() {

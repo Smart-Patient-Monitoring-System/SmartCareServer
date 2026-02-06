@@ -17,7 +17,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/emergency")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+//@CrossOrigin(origins = "*")
 public class EmergencyController {
 
     private final EmergencyService emergencyService;

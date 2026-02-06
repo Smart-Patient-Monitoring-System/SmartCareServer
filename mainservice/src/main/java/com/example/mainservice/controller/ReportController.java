@@ -16,12 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/reports")
-@CrossOrigin(
-        origins = "http://localhost:5173",
-        allowedHeaders = "*",
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.OPTIONS}
-)
+@RequestMapping("/api")
 public class ReportController {
 
     private static final Logger logger = LoggerFactory.getLogger(ReportController.class);
@@ -31,16 +26,17 @@ public class ReportController {
         this.service = service;
     }
 
-    @PostMapping("/upload")
+    // ✅ React: POST /api/patients/{patientId}/reports/upload
+    @PostMapping("/patients/{patientId}/reports/upload")
     public ResponseEntity<?> upload(
+            @PathVariable Long patientId,
             @RequestParam String reportName,
             @RequestParam MultipartFile file
     ) {
-        logger.info("Upload request received - Report: {}, File: {}, Size: {}",
-                reportName, file.getOriginalFilename(), file.getSize());
+        logger.info("Upload request patientId={} reportName={} file={}", patientId, reportName, file.getOriginalFilename());
 
         try {
-            service.uploadReport(reportName, file);
+            service.uploadReport(patientId, reportName, file);
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "File uploaded successfully");
@@ -49,40 +45,33 @@ public class ReportController {
             return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Validation error: {}", e.getMessage());
-            return ResponseEntity.badRequest()
-                    .body(Map.of("error", e.getMessage()));
-
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            logger.error("Upload failed: {}", e.getMessage(), e);
+            logger.error("Upload failed", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Upload failed: " + e.getMessage()));
         }
     }
 
-    @GetMapping
-    public ResponseEntity<List<ReportResponseDTO>> getAllReports() {
-        logger.info("Fetching all reports");
+    // ✅ React: GET /api/patients/{patientId}/reports
+    @GetMapping("/patients/{patientId}/reports")
+    public ResponseEntity<List<ReportResponseDTO>> getPatientReports(@PathVariable Long patientId) {
         try {
-            return ResponseEntity.ok(service.getAllReports());
+            return ResponseEntity.ok(service.getReportsByPatient(patientId));
         } catch (Exception e) {
-            logger.error("Failed to fetch reports: {}", e.getMessage(), e);
+            logger.error("Failed to fetch patient reports", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @GetMapping("/{id}/download")
+    // ✅ React: GET /api/reports/{id}/download
+    @GetMapping("/reports/{id}/download")
     public ResponseEntity<byte[]> downloadReport(@PathVariable Long id) {
-        logger.info("Download request for report ID: {}", id);
-
         try {
             MedicalReport report = service.getReportEntity(id);
             byte[] data = service.downloadReport(id);
 
-            // Extract just the filename from the full path
             String filename = new File(report.getFileName()).getName();
-
-            logger.info("Sending file: {} ({} bytes)", filename, data.length);
 
             return ResponseEntity.ok()
                     .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
@@ -90,7 +79,7 @@ public class ReportController {
                     .body(data);
 
         } catch (Exception e) {
-            logger.error("Download failed for ID {}: {}", id, e.getMessage(), e);
+            logger.error("Download failed", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

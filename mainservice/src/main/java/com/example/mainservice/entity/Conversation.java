@@ -20,10 +20,10 @@ public class Conversation {
     private Long id;
 
     @Column(name = "patient_id", nullable = false)
-    private Integer patientId;
+    private Long patientId;
 
     @Column(name = "doctor_id", nullable = false)
-    private Integer doctorId;
+    private Long doctorId;
 
     @Column(name = "last_message", columnDefinition = "TEXT")
     private String lastMessage;

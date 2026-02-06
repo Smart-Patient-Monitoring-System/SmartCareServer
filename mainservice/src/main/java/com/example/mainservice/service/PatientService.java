@@ -14,7 +14,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
-
 @Service
 @RequiredArgsConstructor
 public class PatientService {
@@ -23,7 +22,7 @@ public class PatientService {
     private final EmergencyContactRepository emergencyContactRepository;
     private final LocationService locationService;
 
-    public Patient create(PatientDTO patient){
+    public Patient create(PatientDTO patient) {
 
         // Auto-calculate coordinates from address
         Double latitude = patient.getLatitude();
@@ -36,7 +35,7 @@ public class PatientService {
             longitude = coordinates[1];
         }
 
-        Patient p =Patient.builder()
+        Patient p = Patient.builder()
                 .id(patient.getId())
                 .name(patient.getName())
                 .dateOfBirth(patient.getDateOfBirth())
@@ -62,6 +61,7 @@ public class PatientService {
                 .medicalConditions(patient.getMedicalConditions())
                 .allergies(patient.getAllergies())
                 .currentMedications(patient.getCurrentMedications())
+                .pastSurgeries(patient.getPastSurgeries())
                 .emergencyNotes(patient.getEmergencyNotes())
                 .build();
         Patient savedPatient = patientrepo.save(p);
@@ -73,8 +73,8 @@ public class PatientService {
 
     }
 
-    public List<PatientDTO> getDetails(){
-        return patientrepo.findAll().stream().map( p -> PatientDTO.builder()
+    public List<PatientDTO> getDetails() {
+        return patientrepo.findAll().stream().map(p -> PatientDTO.builder()
                 .Id(p.getId())
                 .name(p.getName())
                 .dateOfBirth(p.getDateOfBirth())
@@ -99,21 +99,24 @@ public class PatientService {
                 .medicalConditions(p.getMedicalConditions())
                 .allergies(p.getAllergies())
                 .currentMedications(p.getCurrentMedications())
+                .pastSurgeries(p.getPastSurgeries())
                 .emergencyNotes(p.getEmergencyNotes())
                 .build()).toList();
     }
 
-    public void deletePatient(Long Id){
+    public void deletePatient(Long Id) {
 
         patientrepo.deleteById(Id);
     }
 
     @Transactional
-    public PatientDTO updatePatient(Long Id, PatientDTO dto){
+    public PatientDTO updatePatient(Long Id, PatientDTO dto) {
         Patient p = patientrepo.findById(Id).orElseThrow();
 
-        if(dto.getName()!=null) p.setName(dto.getName());
-        if(dto.getDateOfBirth()!=null) p.setDateOfBirth(dto.getDateOfBirth());
+        if (dto.getName() != null)
+            p.setName(dto.getName());
+        if (dto.getDateOfBirth() != null)
+            p.setDateOfBirth(dto.getDateOfBirth());
         if (dto.getAddress() != null) {
             p.setAddress(dto.getAddress());
             // Recalculate coordinates if address changed
@@ -122,32 +125,53 @@ public class PatientService {
             p.setLatitude(coordinates[0]);
             p.setLongitude(coordinates[1]);
         }
-        if(dto.getEmail()!=null) p.setEmail(dto.getEmail());
-        if(dto.getNicNo()!=null) p.setNicNo(dto.getNicNo());
-        if(dto.getGender()!=null) p.setGender(dto.getGender());
-        if(dto.getContactNo()!=null) p.setContactNo(dto.getContactNo());
-        if(dto.getGuardiansName()!=null) p.setGuardiansName(dto.getGuardiansName());
-        if(dto.getGuardiansContactNo()!=null) p.setGuardiansContactNo(dto.getGuardiansContactNo());
-        if(dto.getBloodType()!=null) p.setBloodType(dto.getBloodType());
-        if(dto.getPassword()!=null) p.setPassword(dto.getPassword());
-        if(dto.getUsername()!=null) p.setUsername(dto.getUsername());
+        if (dto.getEmail() != null)
+            p.setEmail(dto.getEmail());
+        if (dto.getNicNo() != null)
+            p.setNicNo(dto.getNicNo());
+        if (dto.getGender() != null)
+            p.setGender(dto.getGender());
+        if (dto.getContactNo() != null)
+            p.setContactNo(dto.getContactNo());
+        if (dto.getGuardiansName() != null)
+            p.setGuardiansName(dto.getGuardiansName());
+        if (dto.getGuardiansContactNo() != null)
+            p.setGuardiansContactNo(dto.getGuardiansContactNo());
+        if (dto.getBloodType() != null)
+            p.setBloodType(dto.getBloodType());
+        if (dto.getPassword() != null)
+            p.setPassword(dto.getPassword());
+        if (dto.getUsername() != null)
+            p.setUsername(dto.getUsername());
 
         // NEW: Update emergency fields
-        if (dto.getCity() != null) p.setCity(dto.getCity());
-        if (dto.getDistrict() != null) p.setDistrict(dto.getDistrict());
-        if (dto.getPostalCode() != null) p.setPostalCode(dto.getPostalCode());
-        if (dto.getLatitude() != null) p.setLatitude(dto.getLatitude());
-        if (dto.getLongitude() != null) p.setLongitude(dto.getLongitude());
-        if (dto.getGuardianRelationship() != null) p.setGuardianRelationship(dto.getGuardianRelationship());
-        if (dto.getGuardianEmail() != null) p.setGuardianEmail(dto.getGuardianEmail());
-        if (dto.getMedicalConditions() != null) p.setMedicalConditions(dto.getMedicalConditions());
-        if (dto.getAllergies() != null) p.setAllergies(dto.getAllergies());
-        if (dto.getCurrentMedications() != null) p.setCurrentMedications(dto.getCurrentMedications());
-        if (dto.getEmergencyNotes() != null) p.setEmergencyNotes(dto.getEmergencyNotes());
+        if (dto.getCity() != null)
+            p.setCity(dto.getCity());
+        if (dto.getDistrict() != null)
+            p.setDistrict(dto.getDistrict());
+        if (dto.getPostalCode() != null)
+            p.setPostalCode(dto.getPostalCode());
+        if (dto.getLatitude() != null)
+            p.setLatitude(dto.getLatitude());
+        if (dto.getLongitude() != null)
+            p.setLongitude(dto.getLongitude());
+        if (dto.getGuardianRelationship() != null)
+            p.setGuardianRelationship(dto.getGuardianRelationship());
+        if (dto.getGuardianEmail() != null)
+            p.setGuardianEmail(dto.getGuardianEmail());
+        if (dto.getMedicalConditions() != null)
+            p.setMedicalConditions(dto.getMedicalConditions());
+        if (dto.getAllergies() != null)
+            p.setAllergies(dto.getAllergies());
+        if (dto.getCurrentMedications() != null)
+            p.setCurrentMedications(dto.getCurrentMedications());
+        if (dto.getPastSurgeries() != null)
+            p.setPastSurgeries(dto.getPastSurgeries());
+        if (dto.getEmergencyNotes() != null)
+            p.setEmergencyNotes(dto.getEmergencyNotes());
 
         Patient updatedPatient = patientrepo.save(p);
         return convertToDTO(updatedPatient);
-
 
     }
 
@@ -178,9 +202,11 @@ public class PatientService {
         dto.setMedicalConditions(patient.getMedicalConditions());
         dto.setAllergies(patient.getAllergies());
         dto.setCurrentMedications(patient.getCurrentMedications());
+        dto.setPastSurgeries(patient.getPastSurgeries());
         dto.setEmergencyNotes(patient.getEmergencyNotes());
         return dto;
     }
+
     /**
      * Auto-create emergency contact from guardian info
      */
@@ -197,8 +223,8 @@ public class PatientService {
                 contact.setUserId(patient.getId());
                 contact.setContactName(patient.getGuardiansName());
                 contact.setPhoneNumber(patient.getGuardiansContactNo());
-                contact.setRelationship(patient.getGuardianRelationship() != null ?
-                        patient.getGuardianRelationship() : "Guardian");
+                contact.setRelationship(
+                        patient.getGuardianRelationship() != null ? patient.getGuardianRelationship() : "Guardian");
                 contact.setIsPrimary(true);
 
                 emergencyContactRepository.save(contact);
@@ -212,9 +238,12 @@ public class PatientService {
      */
     private String buildFullAddress(PatientDTO patient) {
         StringBuilder address = new StringBuilder();
-        if (patient.getAddress() != null) address.append(patient.getAddress());
-        if (patient.getCity() != null) address.append(", ").append(patient.getCity());
-        if (patient.getDistrict() != null) address.append(", ").append(patient.getDistrict());
+        if (patient.getAddress() != null)
+            address.append(patient.getAddress());
+        if (patient.getCity() != null)
+            address.append(", ").append(patient.getCity());
+        if (patient.getDistrict() != null)
+            address.append(", ").append(patient.getDistrict());
         address.append(", Sri Lanka"); // Default country
         return address.toString();
     }

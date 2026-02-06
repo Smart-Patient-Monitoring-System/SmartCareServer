@@ -123,6 +123,7 @@ public class PatientController {
             patientInfo.put("allergies", patient.getAllergies());
             patientInfo.put("medicalConditions", patient.getMedicalConditions());
             patientInfo.put("currentMedications", patient.getCurrentMedications());
+            patientInfo.put("pastSurgeries", patient.getPastSurgeries());
             panelData.put("patientInfo", patientInfo);
 
             return ResponseEntity.ok(panelData);

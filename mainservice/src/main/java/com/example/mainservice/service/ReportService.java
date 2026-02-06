@@ -8,11 +8,14 @@ import java.util.List;
 
 public interface ReportService {
 
-    void uploadReport(String reportName, MultipartFile file);
+    void uploadReport(Long patientId, String reportName, MultipartFile file);
 
-    List<ReportResponseDTO> getAllReports();
+    List<ReportResponseDTO> getReportsByPatient(Long patientId);
 
     byte[] downloadReport(Long id);
 
-    MedicalReport getReportEntity(Long id); // new helper
+    MedicalReport getReportEntity(Long id);
+
+    List<MedicalReport> getReportEntitiesByPatient(Long patientId);
+
 }
