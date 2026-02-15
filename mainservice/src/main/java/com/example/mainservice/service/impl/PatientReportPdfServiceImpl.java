@@ -43,7 +43,7 @@ public class PatientReportPdfServiceImpl implements PatientReportPdfService {
         MedicalSummaryDTO summary = medicalEventService.getSummary(patientId);
         List<MedicalEventResponseDTO> events = medicalEventService.getEvents(patientId, from, to);
 
-        // ✅ Use FULL report entities (with OCR text)
+        //  Use FULL report entities (with OCR text)
         List<MedicalReport> reportsFull = reportService.getReportEntitiesByPatient(patientId);
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -78,10 +78,12 @@ public class PatientReportPdfServiceImpl implements PatientReportPdfService {
                 doc.add(new Paragraph(
                         "BP: " + safeObj(v.get("bp")) +
                                 ", SpO2: " + safeObj(v.get("spo2")) +
+                                ", Sugar: " + safeObj(v.get("sugarLevel")) +
                                 ", Temp: " + safeObj(v.get("temp")) +
                                 ", HR: " + safeObj(v.get("heartRate")),
                         normal
                 ));
+
             } else {
                 doc.add(new Paragraph("Latest Vitals: N/A", normal));
             }

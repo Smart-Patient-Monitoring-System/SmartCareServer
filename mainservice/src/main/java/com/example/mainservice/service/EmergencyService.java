@@ -191,6 +191,7 @@ public class EmergencyService {
         return R * c;
     }
 
+
     /**
      * Auto-create emergency contact from guardian info during patient registration
      */
