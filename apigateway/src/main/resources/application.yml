@@ -1,0 +1,48 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: apigateway
+
+  cloud:
+    gateway:
+      routes:
+        - id: mainservice
+          uri: lb://mainservice
+          predicates:
+            - Path=/api/main/**
+          filters:
+            - StripPrefix=2
+
+        - id: iot-service
+          uri: lb://iot-service
+          predicates:
+            - Path=/api/iot/**
+          filters:
+            - StripPrefix=2
+
+        - id: chatbotbackend
+          uri: lb://chatbotbackend
+          predicates:
+            - Path=/api/bot/**
+          filters:
+            - StripPrefix=2
+
+        - id: vitalreports
+          uri: lb://vitalreports
+          predicates:
+            - Path=/api/reports/**
+          filters:
+            - StripPrefix=2
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discoveryserver:8761/eureka}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
