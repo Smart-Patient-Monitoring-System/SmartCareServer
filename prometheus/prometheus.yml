@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: discoveryserver
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['discoveryserver:8761']
+
+  - job_name: apigateway
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['apigateway:8088']
+
+  - job_name: mainservice
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['mainservice:8080']
+
+  - job_name: iot-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['iot-service:8082']
+
+  - job_name: chatbotbackend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['chatbotbackend:8081']
+
+  - job_name: vitalreports
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['vitalreports:8083']
