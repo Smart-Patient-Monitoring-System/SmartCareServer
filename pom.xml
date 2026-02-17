@@ -33,6 +33,8 @@
         <module>chatbotbackend</module>
         <module>mainservice</module>
         <module>vitalReports-AI</module>
+        <module>discoveryserver</module>
+        <module>apigateway</module>
     </modules>
 
     <build>

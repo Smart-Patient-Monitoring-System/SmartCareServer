@@ -9,6 +9,9 @@
           <option value="mainservice" />
           <option value="mainservice" />
           <option value="mainservice" />
+          <option value="discoveryserver" />
+          <option value="discoveryserver" />
+          <option value="discoveryserver" />
         </list>
       </option>
       <option name="ignoredPackages">
@@ -17,6 +20,9 @@
           <option value="org.apache.poi:poi-ooxml:5.2.5" />
           <option value="net.minidev:json-smart:2.5.0" />
           <option value="ch.qos.logback:logback-classic:1.4.14" />
+          <option value="org.springframework.security:spring-security-crypto:6.2.1" />
+          <option value="org.springframework.boot:spring-boot-actuator-autoconfigure:3.2.1" />
+          <option value="org.springframework.boot:spring-boot:3.2.1" />
         </list>
       </option>
       <option name="ignoredReasons">
@@ -25,6 +31,9 @@
           <option value="Not exploitable" />
           <option value="Not exploitable" />
           <option value="Not exploitable" />
+          <option value="Not exploitable" />
+          <option value="In progress" />
+          <option value="In progress" />
         </list>
       </option>
     </inspection_tool>
