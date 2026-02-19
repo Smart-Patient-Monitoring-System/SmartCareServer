@@ -1,11 +1,15 @@
 services:
   discoveryserver:
-    build: ./discoveryserver
+    build:
+      context: .
+      dockerfile: discoveryserver/Dockerfile
     ports:
       - "8761:8761"
 
   apigateway:
-    build: ./apigateway
+    build:
+      context: .
+      dockerfile: apigateway/Dockerfile
     ports:
       - "8088:8088"
     environment:
@@ -50,69 +54,68 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
   mainservice:
-    build: ./mainservice
+    build:
+      context: .
+      dockerfile: mainservice/Dockerfile
     ports:
       - "8080:8080"
     depends_on:
       - mysql
       - kafka
       - discoveryserver
+    env_file:
+      - .env
     environment:
-      # DB
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-
-      # Kafka
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-
-      # Eureka
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
-
-      # App secrets (example)
       JWT_SECRET: ${JWT_SECRET}
-    env_file:
-      - .env
 
   iot-service:
-    build: ./IOT_service
+    build:
+      context: .
+      dockerfile: IOT_service/Dockerfile
     ports:
       - "8082:8082"
     depends_on:
       - postgres
       - kafka
       - discoveryserver
+    env_file:
+      - .env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
-    env_file:
-      - .env
 
   chatbotbackend:
-    build: ./chatbotbackend
+    build:
+      context: .
+      dockerfile: chatbotbackend/Dockerfile
     ports:
       - "8081:8081"
     depends_on:
       - discoveryserver
+    env_file:
+      - .env
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
       GEMINI_API_KEY: ${GEMINI_API_KEY}
-    env_file:
-      - .env
 
   vitalreports:
-    build: ./vitalReports-AI
+    build:
+      context: .
+      dockerfile: vitalReports-AI/Dockerfile
     ports:
       - "8083:8083"
     depends_on:
       - discoveryserver
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
-
-
 
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -134,6 +137,3 @@ services:
       - "3001:3000"
     depends_on:
       - prometheus
-
-
-
