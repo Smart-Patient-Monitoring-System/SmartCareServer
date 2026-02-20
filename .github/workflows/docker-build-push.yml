@@ -1,3 +1,4 @@
+# .github/workflows/docker-build-push.yml
 name: CD - Build & Push Images (GHCR)
 
 on:
@@ -71,13 +72,9 @@ jobs:
             echo "branch_tag=$BRANCH" >> $GITHUB_OUTPUT
           fi
 
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "release_tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          else
-            echo "release_tag=" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Build & Push
+      # Normal pushes: sha + branch/latest
+      - name: Build & Push (sha + branch/latest)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -86,4 +83,15 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.include.service }}:${{ steps.tags.outputs.sha_tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.include.service }}:${{ steps.tags.outputs.branch_tag }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.include.service }}:${{ steps.tags.outputs.release_tag }}
+
+      # Release tags: also push vX.Y.Z
+      - name: Build & Push (release tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.include.dockerfile }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.include.service }}:${{ steps.tags.outputs.sha_tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.include.service }}:${{ github.ref_name }}
