@@ -4,8 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @SpringBootApplication
 public class ApiGatewayApplication {
@@ -15,16 +17,17 @@ public class ApiGatewayApplication {
     }
 
     @Bean
-    public CorsFilter corsFilter() {
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
-
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("https://frontend.mangobush-8de88b36.southeastasia.azurecontainerapps.io");
-        config.addAllowedHeader("*");
-        config.addAllowedMethod("*");
+        config.setAllowedOrigins(List.of(
+                "https://frontend.mangobush-8de88b36.southeastasia.azurecontainerapps.io"
+        ));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
 
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-        return new CorsFilter(source);
+        return new CorsWebFilter(source);
     }
 }

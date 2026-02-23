@@ -11,9 +11,9 @@ spring:
         - id: mainservice
           uri: lb://mainservice
           predicates:
-            - Path=/api/main/**
+            - Path=/api/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
 
         - id: iot-service
           uri: lb://iot-service
