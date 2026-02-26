@@ -36,7 +36,7 @@ public class SecurityConfig {
 
     // Comma-separated origins (can be overridden in application.properties or env)
     // Example: cors.allowed.origins=http://localhost:5173,http://localhost:3000
-    @Value("${spring.web.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://frontend.mangobush-8de88b36.southeastasia.azurecontainerapps.io}")
+    @Value("${spring.web.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
 
     private String allowedOrigins;
 
