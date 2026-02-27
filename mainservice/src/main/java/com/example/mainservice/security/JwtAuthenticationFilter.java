@@ -34,32 +34,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String path = request.getServletPath();
+        String path = request.getRequestURI();
 
-        // FIX: Handle BOTH gateway and direct paths
-        if (path.startsWith("/api/auth") || path.startsWith("/auth")) {
+        // FIX: handle BOTH paths
+        if (path != null && (path.startsWith("/api/auth/") || path.startsWith("/auth/"))) {
             filterChain.doFilter(request, response);
             return;
         }
 
         final String authHeader = request.getHeader("Authorization");
 
-        //  No token → just continue (DO NOT BLOCK)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
-            final String jwt = authHeader.substring(7);
-            final String username = jwtUtil.extractUsername(jwt);
+            String jwt = authHeader.substring(7);
+            String username = jwtUtil.extractUsername(jwt);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
                 if (jwtUtil.validateToken(jwt, userDetails)) {
-
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
@@ -74,10 +71,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
-
         } catch (Exception e) {
-            // NEVER break request → just log and continue
-            logger.warn("JWT error: {}");
+            logger.error("JWT processing error: ", e);
         }
 
         filterChain.doFilter(request, response);
