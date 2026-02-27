@@ -13,7 +13,7 @@ services:
     ports:
       - "8088:8088"
     environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: https://discoveryservernew.internal.mangobush-8de88b36.southeastasia.azurecontainerapps.io:8761/eureka
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
     depends_on:
       - discoveryserver
 
@@ -70,7 +70,7 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: https://discoveryservernew.internal.mangobush-8de88b36.southeastasia.azurecontainerapps.io:8761/eureka
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
       JWT_SECRET: ${JWT_SECRET}
 
   iot-service:
@@ -90,7 +90,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: https://discoveryservernew.internal.mangobush-8de88b36.southeastasia.azurecontainerapps.io:8761/eureka
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
 
   chatbotbackend:
     build:
@@ -103,7 +103,7 @@ services:
     env_file:
       - .env
     environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: https://discoveryservernew.internal.mangobush-8de88b36.southeastasia.azurecontainerapps.io:8761/eureka
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
       GEMINI_API_KEY: ${GEMINI_API_KEY}
 
   vitalreports:
@@ -115,7 +115,7 @@ services:
     depends_on:
       - discoveryserver
     environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: https://discoveryservernew.internal.mangobush-8de88b36.southeastasia.azurecontainerapps.io:8761/eureka
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
 
   prometheus:
     image: prom/prometheus:v2.54.1
