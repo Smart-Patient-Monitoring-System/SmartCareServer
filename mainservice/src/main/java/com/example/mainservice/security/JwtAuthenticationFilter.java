@@ -36,8 +36,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // FIX: handle BOTH paths
-        if (path != null && (path.startsWith("/api/auth/") || path.startsWith("/auth/"))) {
+        // Skip JWT for auth endpoints (gateway now keeps /api prefix)
+        if (path != null && path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -63,11 +63,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     null,
                                     userDetails.getAuthorities()
                             );
-
-                    authToken.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
-
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
