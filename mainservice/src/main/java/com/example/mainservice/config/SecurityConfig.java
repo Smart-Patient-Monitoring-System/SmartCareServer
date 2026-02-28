@@ -34,10 +34,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    // Comma-separated origins (can be overridden in application.properties or env)
-    // Example: cors.allowed.origins=http://localhost:5173,http://localhost:3000
-    @Value("${spring.web.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
-
+    @Value("${spring.web.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://frontend.mangobush-8de88b36.southeastasia.azurecontainerapps.io}")
     private String allowedOrigins;
 
     public SecurityConfig(
@@ -58,14 +55,10 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * CORS for REST endpoints (handled by Spring Security)
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Trim spaces and ignore empty values
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
@@ -91,41 +84,39 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        // -------- PUBLIC --------
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/admin/**").permitAll()
-                        .requestMatchers("/api/doctor/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/payments/pay/**").permitAll()
-                        .requestMatchers("/api/payments/notify").permitAll()
-                        .requestMatchers("/ws/**", "/ws").permitAll()
-                        .requestMatchers("/error").permitAll()
+                        // OPTIONS always allowed (CORS preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Booking UI needs these even before login (or at least for PATIENT)
-                        .requestMatchers(HttpMethod.GET, "/api/doctors/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/appointment-types/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/availability/doctor/**").permitAll()
+                        // PUBLIC - both /api/xxx and /xxx (after gateway StripPrefix=1 removes /api)
+                        .requestMatchers("/api/auth/**", "/auth/**").permitAll()
+                        .requestMatchers("/api/admin/**", "/admin/**").permitAll()
+                        .requestMatchers("/api/doctor/**", "/doctor/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/payments/pay/**", "/payments/pay/**").permitAll()
+                        .requestMatchers("/api/payments/notify", "/payments/notify").permitAll()
+                        .requestMatchers("/ws/**", "/ws").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
 
-                        // -------- PATIENT (logged in) --------
-                        .requestMatchers(HttpMethod.POST, "/api/appointments/book").hasAnyRole("PATIENT","ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/appointments/user/**").hasAnyRole("PATIENT","ADMIN")
+                        // Public GET endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/doctors/**", "/doctors/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/appointment-types/**", "/appointment-types/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/availability/doctor/**", "/availability/doctor/**").permitAll()
 
-                        // -------- ADMIN ONLY --------
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/doctors/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/doctors/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/doctors/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/appointment-types/**").hasRole("ADMIN")
+                        // PATIENT
+                        .requestMatchers(HttpMethod.POST, "/api/appointments/book", "/appointments/book").hasAnyRole("PATIENT", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/user/**", "/appointments/user/**").hasAnyRole("PATIENT", "ADMIN")
 
-                        // Chat
-                        .requestMatchers("/api/chat/**").authenticated()
+                        // ADMIN ONLY
+                        .requestMatchers(HttpMethod.POST, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/appointment-types/**", "/appointment-types/**").hasRole("ADMIN")
 
+                        // Chat - authenticated
+                        .requestMatchers("/api/chat/**", "/chat/**").authenticated()
 
-                        // Everything else MUST be authenticated
                         .anyRequest().authenticated()
                 )
-
-                // JWT filter before Spring's default auth filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

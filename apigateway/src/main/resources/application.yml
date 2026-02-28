@@ -11,35 +11,35 @@ spring:
         - id: mainservice
           uri: lb://mainservice
           predicates:
-            - Path=/api/main/**
+            - Path=/api/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
 
         - id: iot-service
           uri: lb://iot-service
           predicates:
             - Path=/api/iot/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
 
         - id: chatbotbackend
           uri: lb://chatbotbackend
           predicates:
             - Path=/api/bot/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
 
         - id: vitalreports
           uri: lb://vitalreports
           predicates:
             - Path=/api/reports/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
 
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discoveryserver:8761/eureka}
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discoveryservernew.internal.mangobush-8de88b36.southeastasia.azurecontainerapps.io:8761/eureka}
 
 management:
   endpoints:
