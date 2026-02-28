@@ -5,17 +5,12 @@ services:
       dockerfile: discoveryserver/Dockerfile
     ports:
       - "8761:8761"
-
-  apigateway:
-    build:
-      context: .
-      dockerfile: apigateway/Dockerfile
-    ports:
-      - "8088:8088"
-    environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
-    depends_on:
-      - discoveryserver
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   mysql:
     image: mysql:8.0
@@ -24,6 +19,12 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   postgres:
     image: postgres:16
@@ -33,6 +34,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.3
@@ -60,18 +67,19 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - mysql
-      - kafka
-      - discoveryserver
+      mysql:
+        condition: service_healthy
+      discoveryserver:
+        condition: service_healthy
     env_file:
       - .env
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
       JWT_SECRET: ${JWT_SECRET}
+      SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
 
   iot-service:
     build:
@@ -80,17 +88,18 @@ services:
     ports:
       - "8082:8082"
     depends_on:
-      - postgres
-      - kafka
-      - discoveryserver
+      postgres:
+        condition: service_healthy
+      discoveryserver:
+        condition: service_healthy
     env_file:
       - .env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
+      SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
 
   chatbotbackend:
     build:
@@ -99,7 +108,8 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - discoveryserver
+      discoveryserver:
+        condition: service_healthy
     env_file:
       - .env
     environment:
@@ -113,7 +123,20 @@ services:
     ports:
       - "8083:8083"
     depends_on:
-      - discoveryserver
+      discoveryserver:
+        condition: service_healthy
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
+
+  apigateway:
+    build:
+      context: .
+      dockerfile: apigateway/Dockerfile
+    ports:
+      - "8088:8088"
+    depends_on:
+      discoveryserver:
+        condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
 
@@ -124,12 +147,8 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
-      - discoveryserver
       - apigateway
       - mainservice
-      - iot-service
-      - chatbotbackend
-      - vitalreports
 
   grafana:
     image: grafana/grafana:11.1.4
