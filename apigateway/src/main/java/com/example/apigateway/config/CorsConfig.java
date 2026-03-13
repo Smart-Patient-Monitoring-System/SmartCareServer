@@ -2,44 +2,32 @@ package com.example.apigateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpResponse;
-import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
-import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebFilter;
-import org.springframework.web.server.WebFilterChain;
-import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class CorsConfig {
 
     @Bean
-    public WebFilter corsFilter() {
-        return (ServerWebExchange exchange, WebFilterChain chain) -> {
-            ServerHttpRequest request = exchange.getRequest();
-            ServerHttpResponse response = exchange.getResponse();
+    public CorsWebFilter corsWebFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "https://*.azurecontainerapps.io"
+        ));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
-            HttpHeaders headers = response.getHeaders();
-            headers.add("Access-Control-Allow-Origin", request.getHeaders().getFirst("Origin") != null
-                    ? request.getHeaders().getFirst("Origin") : "*");
-            headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-            headers.add("Access-Control-Allow-Headers", "*");
-            headers.add("Access-Control-Allow-Credentials", "true");
-            headers.add("Access-Control-Max-Age", "3600");
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
 
-            if (request.getMethod() == HttpMethod.OPTIONS) {
-                response.setStatusCode(HttpStatus.OK);
-                return Mono.empty();
-            }
-
-            return chain.filter(exchange);
-        };
+        return new CorsWebFilter(source);
     }
 }

@@ -14,6 +14,7 @@ public class SecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .cors(ServerHttpSecurity.CorsSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
                         .anyExchange().permitAll()
                 );
