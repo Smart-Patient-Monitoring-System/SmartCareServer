@@ -45,9 +45,9 @@ public class AuthController {
         } catch (RuntimeException e) {
             // Handle role mismatch or other runtime exceptions
             // Return 400 Bad Request for role/validation errors, 403 for access denied
-            HttpStatus status = e.getMessage().contains("role") || e.getMessage().contains("Role") 
+            HttpStatus status = (e.getMessage() != null && (e.getMessage().contains("role") || e.getMessage().contains("Role"))) 
                 ? HttpStatus.BAD_REQUEST 
-                : HttpStatus.FORBIDDEN;
+                : HttpStatus.INTERNAL_SERVER_ERROR;
             return ResponseEntity.status(status)
                     .body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
