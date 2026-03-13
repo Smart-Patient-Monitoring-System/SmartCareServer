@@ -1,6 +1,5 @@
 package com.example.apigateway.config;
 
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -19,8 +18,9 @@ public class CorsConfig {
 
         // Allow frontend origins
         config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:5173",     // React local
-                "https://frontend.mangobush-8de88b36.southeastasia.azurecontainerapps.io"  // keep production safe
+                "http://localhost:5173", // local React
+                "http://localhost:3000", // optional
+                "https://frontend.mangobush-8de88b36.southeastasia.azurecontainerapps.io"
         ));
 
         config.setAllowedMethods(Arrays.asList(
