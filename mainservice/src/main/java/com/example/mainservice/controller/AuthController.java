@@ -43,13 +43,9 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse("Invalid email or password"));
         } catch (RuntimeException e) {
-            // Handle role mismatch or other runtime exceptions
-            // Return 400 Bad Request for role/validation errors, 403 for access denied
-            HttpStatus status = (e.getMessage() != null && (e.getMessage().contains("role") || e.getMessage().contains("Role"))) 
-                ? HttpStatus.BAD_REQUEST 
-                : HttpStatus.INTERNAL_SERVER_ERROR;
-            return ResponseEntity.status(status)
-                    .body(new ErrorResponse(e.getMessage()));
+            // All business logic errors (wrong password, invalid role, etc.) -> 401
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Invalid email or password"));
         } catch (Exception e) {
             // Handle other exceptions
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
