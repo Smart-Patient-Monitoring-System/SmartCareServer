@@ -4,6 +4,7 @@ import com.example.mainservice.dto.ChatAttachmentDTO;
 import com.example.mainservice.dto.ChatMessageDTO;
 import com.example.mainservice.dto.ConversationDTO;
 import com.example.mainservice.dto.DoctorSearchDTO;
+import com.example.mainservice.dto.PatientSearchDTO;
 import com.example.mainservice.entity.*;
 import com.example.mainservice.repository.DoctorRepo;
 import com.example.mainservice.repository.PatientRepo;
@@ -59,7 +60,6 @@ public class ChatRestController {
             @PathVariable Long conversationId,
             Authentication authentication) {
 
-        // Keep Long (not Integer)
         Long userId = getCurrentUserId(authentication);
 
         List<ChatMessage> messages = chatService.getConversationMessages(conversationId);
@@ -141,6 +141,23 @@ public class ChatRestController {
         return ResponseEntity.ok(doctors);
     }
 
+    // ========== PATIENT SEARCH ENDPOINTS (NEW — for doctor side) ==========
+
+    @GetMapping("/patients")
+    public ResponseEntity<List<PatientSearchDTO>> getAllPatients() {
+        log.info("Fetching all patients for chat");
+        return ResponseEntity.ok(chatService.getAllPatients());
+    }
+
+    @GetMapping("/patients/search")
+    public ResponseEntity<List<PatientSearchDTO>> searchPatients(
+            @RequestParam(required = false) String query) {
+        log.info("Patient search request with query: {}", query);
+        return ResponseEntity.ok(chatService.searchPatients(query));
+    }
+
+    // ========== ATTACHMENTS ==========
+
     @PostMapping("/attachments/upload")
     public ResponseEntity<List<ChatAttachmentDTO>> upload(@RequestParam("files") List<MultipartFile> files) throws IOException {
         List<ChatAttachmentDTO> result = new ArrayList<>();
@@ -163,7 +180,6 @@ public class ChatRestController {
 
         return ResponseEntity.ok(result);
     }
-
 
     /**
      * Start a conversation - works for both PATIENT→DOCTOR and DOCTOR→PATIENT
@@ -194,7 +210,6 @@ public class ChatRestController {
             Long currentUserId = getCurrentUserId(authentication);
             log.info("Current authenticated user ID: {}", currentUserId);
 
-            // Determine final patient and doctor IDs (Long everywhere)
             Long finalPatientId;
             Long finalDoctorId;
 
@@ -246,7 +261,6 @@ public class ChatRestController {
         throw new RuntimeException("User not authenticated");
     }
 
-
     private ConversationDTO mapToConversationDTO(Conversation conv, Long currentUserId) {
         ConversationDTO dto = new ConversationDTO();
         dto.setId(conv.getId());
@@ -260,7 +274,7 @@ public class ChatRestController {
             dto.setPatient(new ConversationDTO.UserInfo(
                     patient.getId(),
                     patient.getName(),
-                    null, // must match your field
+                    null,
                     false,
                     "PATIENT"
             ));
@@ -272,7 +286,7 @@ public class ChatRestController {
                     doctor.getName(),
                     null,
                     false,
-                    "DOCTOR" // OR doctor.getPosition()
+                    "DOCTOR"
             ));
         }
 
@@ -281,9 +295,6 @@ public class ChatRestController {
 
         return dto;
     }
-
-
-
 
     private ChatMessageDTO mapToChatMessageDTO(ChatMessage msg) {
         var attachments = (msg.getAttachments() == null) ? List.<ChatAttachmentDTO>of()
