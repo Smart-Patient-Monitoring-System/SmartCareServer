@@ -62,8 +62,7 @@ public class EmailService {
             javaMailSender.send(message);
             log.info("Password reset email sent successfully to: {}", email);
         } catch (Exception e) {
-            log.error("Failed to send password reset email to: {}", email, e);
-            throw new RuntimeException("Failed to send password reset email", e);
+            log.warn("Could not send password reset email to: {} — mail config issue. Check server logs.", email, e);
         }
     }
 
@@ -86,8 +85,7 @@ public class EmailService {
             javaMailSender.send(message);
             log.info("Login OTP email sent successfully to: {}", email);
         } catch (Exception e) {
-            log.error("Failed to send login OTP email to: {}", email, e);
-            throw new RuntimeException("Failed to send login OTP email", e);
+            log.warn("Could not send login OTP email to: {} — mail config issue. Check server logs.", email, e);
         }
     }
 
@@ -110,8 +108,7 @@ public class EmailService {
             javaMailSender.send(message);
             log.info("Password reset OTP email sent successfully to: {}", email);
         } catch (Exception e) {
-            log.error("Failed to send password reset OTP email to: {}", email, e);
-            throw new RuntimeException("Failed to send password reset OTP email", e);
+            log.warn("Could not send password reset OTP email to: {} — mail config issue. Check server logs.", email, e);
         }
     }
 
@@ -184,8 +181,7 @@ public class EmailService {
             javaMailSender.send(message);
             log.info("Doctor credentials email sent successfully to: {}", email);
         } catch (Exception e) {
-            log.error("Failed to send doctor credentials email to: {}", email, e);
-            throw new RuntimeException("Failed to send doctor credentials email", e);
+            log.warn("Could not send doctor credentials email to: {} — mail config issue. Check server logs.", email, e);
         }
     }
 
