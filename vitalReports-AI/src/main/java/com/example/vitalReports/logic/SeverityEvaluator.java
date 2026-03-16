@@ -39,6 +39,7 @@ public class SeverityEvaluator {
         if (status.getPressureStatus() == target) count++;
         if (status.getHeartRateStatus() == target) count++;
         if (status.getTemperatureStatus() == target) count++;
+        if (status.getBloodSugarStatus() == target) count++;
 
         return count;
     }

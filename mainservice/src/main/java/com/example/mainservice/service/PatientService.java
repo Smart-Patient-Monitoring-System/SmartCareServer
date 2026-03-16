@@ -7,6 +7,7 @@ import com.example.mainservice.entity.Patient;
 import com.example.mainservice.entity.EmergencyContact;
 import com.example.mainservice.repository.EmergencyContactRepository;
 import com.example.mainservice.repository.PatientRepo;
+import com.example.mainservice.service.DoctorAssignmentService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class PatientService {
     private final PasswordEncoder passwordEncoder;
     private final EmergencyContactRepository emergencyContactRepository;
     private final LocationService locationService;
+    private final DoctorAssignmentService doctorAssignmentService;
 
     public Patient create(PatientDTO patient) {
 
@@ -64,6 +66,11 @@ public class PatientService {
                 .pastSurgeries(patient.getPastSurgeries())
                 .emergencyNotes(patient.getEmergencyNotes())
                 .build();
+
+        // Auto-assign doctor using Round Robin
+        Long assignedDoctorId = doctorAssignmentService.assignDoctor();
+        p.setAssignedDoctorId(assignedDoctorId);
+
         Patient savedPatient = patientrepo.save(p);
 
         // Auto-create emergency contact from guardian info
@@ -101,6 +108,7 @@ public class PatientService {
                 .currentMedications(p.getCurrentMedications())
                 .pastSurgeries(p.getPastSurgeries())
                 .emergencyNotes(p.getEmergencyNotes())
+                .assignedDoctorId(p.getAssignedDoctorId())
                 .build()).toList();
     }
 

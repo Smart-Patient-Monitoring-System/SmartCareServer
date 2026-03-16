@@ -38,6 +38,7 @@ public class HybridVitalEvaluator implements VitalDecisionEngine {
         return status.getSpo2Status() == HealthStatus.CRITICAL
                 || status.getPressureStatus() == HealthStatus.CRITICAL
                 || status.getHeartRateStatus() == HealthStatus.CRITICAL
-                || status.getTemperatureStatus() == HealthStatus.CRITICAL;
+                || status.getTemperatureStatus() == HealthStatus.CRITICAL
+                || status.getBloodSugarStatus() == HealthStatus.CRITICAL;
     }
 }

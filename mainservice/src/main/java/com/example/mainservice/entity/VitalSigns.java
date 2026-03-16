@@ -50,6 +50,17 @@ public class VitalSigns {
     // Patient identifier (you can link to User entity if needed)
     private Long patientId;
 
+    // Room number/location
+    private String room;
+
+    // ----- Cached evaluation fields from VitalReports-AI -----
+    private String triageLevel; // e.g., CRITICAL, HIGH, NORMAL
+    private String spo2Status; // GOOD, AVERAGE, BAD, CRITICAL
+    private String pressureStatus;
+    private String heartRateStatus;
+    private String temperatureStatus;
+    private String bloodSugarStatus;
+
     // Metadata
     private LocalDateTime createdAt;
 

@@ -26,6 +26,9 @@ public class VitalReading {
     @Max(value = 45, message = "Temperature is too high")
     private double temperature;
 
+    // Blood sugar level (mg/dL) — optional, defaults to 0
+    private double bloodSugar;
+
     // Unix timestamp from IoT device
     @NotNull(message = "Timestamp is required")
     private Long timestamp;
@@ -44,6 +47,16 @@ public class VitalReading {
         this.timestamp = timestamp;
     }
 
+    public VitalReading(int spo2, int systolicBP, int heartRate,
+            double temperature, double bloodSugar, Long timestamp) {
+        this.spo2 = spo2;
+        this.systolicBP = systolicBP;
+        this.heartRate = heartRate;
+        this.temperature = temperature;
+        this.bloodSugar = bloodSugar;
+        this.timestamp = timestamp;
+    }
+
     public int getSpo2() {
         return spo2;
     }
@@ -58,6 +71,10 @@ public class VitalReading {
 
     public double getTemperature() {
         return temperature;
+    }
+
+    public double getBloodSugar() {
+        return bloodSugar;
     }
 
     public Long getTimestamp() {
