@@ -57,9 +57,18 @@ public class JwtUtil {
         return createToken(claims, userDetails.getUsername());
     }
 
+    // ── Original (kept for backward compat) ──────────────────────────────────
     public String generateToken(UserDetails userDetails, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
+        return createToken(claims, userDetails.getUsername());
+    }
+
+    // ── NEW: embeds userId so IoT service can identify the user ──────────────
+    public String generateToken(UserDetails userDetails, String role, Long userId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        claims.put("userId", userId);
         return createToken(claims, userDetails.getUsername());
     }
 
@@ -78,21 +87,24 @@ public class JwtUtil {
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
-    /**
-     * Generate a JWT token for password reset
-     * Token expires in 1 hour (3600000 milliseconds)
-     * @param username The username
-     * @param role The user role
-     * @return JWT token for password reset
-     */
+    // ── NEW: extract userId claim ─────────────────────────────────────────────
+    public Long extractUserId(String token) {
+        Claims claims = extractAllClaims(token);
+        Object userId = claims.get("userId");
+        if (userId == null) return null;
+        return Long.valueOf(userId.toString());
+    }
+
+    public String extractRole(String token) {
+        Claims claims = extractAllClaims(token);
+        return (String) claims.get("role");
+    }
+
     public String generatePasswordResetToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
-        claims.put("type", "password_reset"); // Mark as password reset token
-        
-        // Password reset tokens expire in 1 hour (3600000 milliseconds)
-        long resetTokenExpiration = 3600000L; // 1 hour in milliseconds
-        
+        claims.put("type", "password_reset");
+        long resetTokenExpiration = 3600000L;
         return Jwts.builder()
                 .claims(claims)
                 .subject(username)
@@ -102,21 +114,6 @@ public class JwtUtil {
                 .compact();
     }
 
-    /**
-     * Extract role from JWT token
-     * @param token JWT token
-     * @return Role string
-     */
-    public String extractRole(String token) {
-        Claims claims = extractAllClaims(token);
-        return (String) claims.get("role");
-    }
-
-    /**
-     * Validate password reset token (checks expiration and signature)
-     * @param token JWT token
-     * @return true if token is valid, false otherwise
-     */
     public Boolean validatePasswordResetToken(String token) {
         try {
             return !isTokenExpired(token);

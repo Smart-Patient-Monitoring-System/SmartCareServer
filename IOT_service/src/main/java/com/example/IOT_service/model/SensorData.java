@@ -17,6 +17,14 @@ public class SensorData {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // ── USER SCOPING ─────────────────────────────────────────────────────────
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @Column(name = "device_id")
+    private String deviceId;
+    // ─────────────────────────────────────────────────────────────────────────
+
     @Column(name = "room_temp")
     private Double roomTemp;
 

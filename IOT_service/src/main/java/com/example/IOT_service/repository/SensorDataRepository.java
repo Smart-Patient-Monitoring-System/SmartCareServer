@@ -2,8 +2,10 @@ package com.example.IOT_service.repository;
 
 import com.example.IOT_service.model.SensorData;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -11,24 +13,23 @@ import java.util.Optional;
 @Repository
 public interface SensorDataRepository extends JpaRepository<SensorData, Long> {
 
-    // Get all data ordered by most recent first
-    List<SensorData> findAllByOrderByReceivedAtDesc();
+    // All data for a specific user, newest first
+    List<SensorData> findByUserIdOrderByReceivedAtDesc(Long userId);
 
-    // Get data within time range
-    List<SensorData> findByReceivedAtBetweenOrderByReceivedAtDesc(
-            LocalDateTime start,
-            LocalDateTime end
-    );
+    // Most recent single reading for a user
+    Optional<SensorData> findTopByUserIdOrderByReceivedAtDesc(Long userId);
 
-    // Get latest N records
-    @Query(value = "SELECT * FROM sensor_data ORDER BY received_at DESC LIMIT ?1",
+    // Latest N records for a user
+    @Query(value = "SELECT * FROM sensor_data WHERE user_id = ?1 ORDER BY received_at DESC LIMIT ?2",
             nativeQuery = true)
-    List<SensorData> findLatestN(int limit);
+    List<SensorData> findLatestNForUser(Long userId, int limit);
 
-    // Get the most recent reading
-    Optional<SensorData> findTopByOrderByReceivedAtDesc();
+    // Records newer than `since` for a user
+    @Query("SELECT s FROM SensorData s WHERE s.userId = :userId AND s.receivedAt >= :since ORDER BY s.receivedAt DESC")
+    List<SensorData> findRecentDataForUser(Long userId, LocalDateTime since);
 
-    // Get data from last N hours
-    @Query("SELECT s FROM SensorData s WHERE s.receivedAt >= :since ORDER BY s.receivedAt DESC")
-    List<SensorData> findRecentData(LocalDateTime since);
+    // Cleanup
+    @Modifying
+    @Query("DELETE FROM SensorData s WHERE s.receivedAt < :cutoff")
+    void deleteByReceivedAtBefore(LocalDateTime cutoff);
 }

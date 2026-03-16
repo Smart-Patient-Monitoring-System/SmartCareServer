@@ -11,6 +11,8 @@ import com.example.mainservice.dto.SignupRequest;
 import com.example.mainservice.dto.VerifyForgotPasswordOtpRequest;
 import com.example.mainservice.dto.VerifyLoginOtpRequest;
 import com.example.mainservice.service.AuthService;
+import com.example.mainservice.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,10 +29,10 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-//@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtUtil jwtUtil;          // ← added
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
@@ -38,16 +40,12 @@ public class AuthController {
             AuthResponse response = authService.login(loginRequest);
             return ResponseEntity.ok(response);
         } catch (org.springframework.security.core.AuthenticationException e) {
-            // Handle authentication failures (wrong username/password)
-            // This must be caught before Exception since it extends Exception
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse("Invalid email or password"));
         } catch (RuntimeException e) {
-            // All business logic errors (wrong password, invalid role, etc.) -> 401
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Invalid email or password"));
         } catch (Exception e) {
-            // Handle other exceptions
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse("Invalid email or password"));
         }
@@ -88,8 +86,6 @@ public class AuthController {
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
             ForgotPasswordResponse response = authService.forgotPassword(request);
-            // Response includes resetToken and resetLink for development
-            // In production, you may want to hide these and only return the message
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -100,7 +96,6 @@ public class AuthController {
         }
     }
 
-    // New OTP-based forgot-password flow (preferred)
     @PostMapping("/forgot-password/request-otp")
     public ResponseEntity<?> forgotPasswordRequestOtp(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
@@ -168,6 +163,38 @@ public class AuthController {
         return ResponseEntity.ok("Backend is running!");
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // NEW endpoint — called by the IoT service to validate a JWT and get userId
+    // Already permitted in SecurityConfig via /api/auth/** → no changes needed there
+    // ═══════════════════════════════════════════════════════════════════════
+    @GetMapping("/validate")
+    public ResponseEntity<?> validateToken(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Missing or invalid Authorization header"));
+        }
+        try {
+            String token = authHeader.substring(7);
+            Long userId = jwtUtil.extractUserId(token);
+            String username = jwtUtil.extractUsername(token);
+            String role = jwtUtil.extractRole(token);
+
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Token has no userId — please log in again"));
+            }
+            return ResponseEntity.ok(Map.of(
+                    "userId", userId,
+                    "username", username,
+                    "role", role
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Invalid or expired token"));
+        }
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -176,24 +203,13 @@ public class AuthController {
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        
-        String errorMessage = errors.values().stream()
-                .findFirst()
-                .orElse("Validation failed");
-        
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(errorMessage));
+        String errorMessage = errors.values().stream().findFirst().orElse("Validation failed");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(errorMessage));
     }
 
-    @Data
-    @AllArgsConstructor
-    public static class ErrorResponse {
-        private String message;
-    }
+    @Data @AllArgsConstructor
+    public static class ErrorResponse { private String message; }
 
-    @Data
-    @AllArgsConstructor
-    public static class SuccessResponse {
-        private String message;
-    }
+    @Data @AllArgsConstructor
+    public static class SuccessResponse { private String message; }
 }

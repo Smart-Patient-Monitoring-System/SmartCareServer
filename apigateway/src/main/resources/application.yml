@@ -11,7 +11,7 @@ spring:
         - id: iot-service
           uri: lb://iot-service
           predicates:
-            - Path=/api/iot/**
+            - Path=/api/sensordata/**
           filters:
             - StripPrefix=0
 

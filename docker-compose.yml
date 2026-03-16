@@ -92,6 +92,8 @@ services:
         condition: service_healthy
       discoveryserver:
         condition: service_healthy
+      mainservice: # ← ADD: IoT service needs mainservice to be up
+        condition: service_started
     env_file:
       - .env
     environment:
@@ -100,6 +102,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
       SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      AUTH_SERVICE_URL: http://mainservice:8080
 
   chatbotbackend:
     build:
