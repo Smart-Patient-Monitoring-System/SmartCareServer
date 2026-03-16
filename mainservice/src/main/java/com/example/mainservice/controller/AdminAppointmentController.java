@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/appointments")
@@ -29,20 +30,23 @@ public class AdminAppointmentController {
 
         System.out.println("PAID APPOINTMENTS = " + list.size());
 
-        return list.stream().map(a -> new AppointmentDTO(
-                a.getId(),
-                a.getAvailability() != null ? a.getAvailability().getId() : null,
-                a.getDoctor() != null ? a.getDoctor().getName() : "N/A",
-                a.getDoctor() != null ? a.getDoctor().getSpecialty() : "N/A",
-                a.getDoctor() != null ? a.getDoctor().getConsultationFee() : 0.0,
-                a.getAppointmentType().getTypeName(),
-                a.getPhysicalLocation() != null ? a.getPhysicalLocation() : a.getOnlineLink(),
-                a.getBookingDate(),
-                a.getBookingTime(),
-                a.getReason(),
-                a.getPaymentStatus().name(),
-                a.getAppointmentStatus().name()
-        )).toList();
+        return list.stream().map(a -> {
+                AppointmentDTO dto = new AppointmentDTO();
+                dto.setAppointmentId(a.getId());
+                dto.setAvailabilityId(a.getAvailability() != null ? a.getAvailability().getId() : null);
+                dto.setDoctorName(a.getDoctor() != null ? a.getDoctor().getName() : "N/A");
+                dto.setSpecialty(a.getDoctor() != null ? a.getDoctor().getSpecialty() : "N/A");
+                dto.setConsultationFee(a.getDoctor() != null ? a.getDoctor().getConsultationFee() : 0.0);
+                dto.setAppointmentType(a.getAppointmentType().getTypeName());
+                dto.setLocationOrLink(a.getPhysicalLocation() != null ? a.getPhysicalLocation() : a.getOnlineLink());
+                dto.setBookingDate(a.getBookingDate());
+                dto.setBookingTime(a.getBookingTime());
+                dto.setReason(a.getReason());
+                dto.setPaymentStatus(a.getPaymentStatus().name());
+                dto.setAppointmentStatus(a.getAppointmentStatus().name());
+                dto.setPatientName(a.getPatientName());
+                return dto;
+        }).collect(java.util.stream.Collectors.toList());
     }
 
     // 🔹 CONFIRM APPOINTMENT

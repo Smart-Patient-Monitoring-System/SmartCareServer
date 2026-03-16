@@ -10,4 +10,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     // Fetch only successful payments
     List<Appointment> findByPaymentStatus(PaymentStatus paymentStatus);
+
+    // Fetch appointments for a specific doctor (by SpecialDoctor ID)
+    List<Appointment> findByDoctorIdAndPaymentStatus(Long doctorId, PaymentStatus paymentStatus);
+
+    // Fetch all appointments for a specific doctor
+    List<Appointment> findByDoctorId(Long doctorId);
 }

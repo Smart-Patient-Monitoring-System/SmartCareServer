@@ -85,6 +85,39 @@ public class AppointmentService {
     }
 
     // ============================
+    // DOCTOR → THEIR APPOINTMENTS
+    // ============================
+    public List<AppointmentDTO> getDoctorAppointments(Long doctorId) {
+        return appointmentRepository
+                .findByDoctorIdAndPaymentStatus(doctorId, PaymentStatus.SUCCESS)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // ============================
+    // SET ZOOM/MEETING LINK
+    // ============================
+    @Transactional
+    public AppointmentDTO setMeetingLink(Long appointmentId, String link) {
+        Appointment a = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        a.setOnlineLink(link);
+        return convertToDTO(appointmentRepository.save(a));
+    }
+
+    // ============================
+    // CONFIRM APPOINTMENT
+    // ============================
+    @Transactional
+    public AppointmentDTO confirmAppointment(Long appointmentId) {
+        Appointment a = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        a.setAppointmentStatus(AppointmentStatus.CONFIRMED);
+        return convertToDTO(appointmentRepository.save(a));
+    }
+
+    // ============================
     // ENTITY → DTO
     // ============================
     private AppointmentDTO convertToDTO(Appointment appointment) {
@@ -94,21 +127,21 @@ public class AppointmentService {
                         ? appointment.getPhysicalLocation()
                         : appointment.getOnlineLink();
 
-        return new AppointmentDTO(
-                appointment.getId(),
-                appointment.getAvailability() != null
-                        ? appointment.getAvailability().getId()
-                        : null,
-                appointment.getDoctor().getName(),
-                appointment.getDoctor().getSpecialty(),
-                appointment.getDoctor().getConsultationFee(),
-                appointment.getAppointmentType().getTypeName(),
-                locationOrLink,
-                appointment.getBookingDate(),
-                appointment.getBookingTime(),
-                appointment.getReason(),
-                appointment.getPaymentStatus().name(),
-                appointment.getAppointmentStatus().name()
-        );
+        AppointmentDTO dto = new AppointmentDTO();
+        dto.setAppointmentId(appointment.getId());
+        dto.setAvailabilityId(appointment.getAvailability() != null
+                ? appointment.getAvailability().getId() : null);
+        dto.setDoctorName(appointment.getDoctor().getName());
+        dto.setSpecialty(appointment.getDoctor().getSpecialty());
+        dto.setConsultationFee(appointment.getDoctor().getConsultationFee());
+        dto.setAppointmentType(appointment.getAppointmentType().getTypeName());
+        dto.setLocationOrLink(locationOrLink);
+        dto.setBookingDate(appointment.getBookingDate());
+        dto.setBookingTime(appointment.getBookingTime());
+        dto.setReason(appointment.getReason());
+        dto.setPaymentStatus(appointment.getPaymentStatus().name());
+        dto.setAppointmentStatus(appointment.getAppointmentStatus().name());
+        dto.setPatientName(appointment.getPatientName());
+        return dto;
     }
 }
