@@ -1,14 +1,10 @@
 package com.example.IOT_service.service;
 
-import com.example.IOT_service.model.DeviceRegistry;
 import com.example.IOT_service.model.SensorData;
-import com.example.IOT_service.repository.DeviceRegistryRepository;
 import com.example.IOT_service.repository.SensorDataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,45 +13,28 @@ import java.util.Optional;
 public class SensorDataService {
 
     private final SensorDataRepository repository;
-    private final DeviceRegistryRepository deviceRegistryRepository;
 
-    @Transactional
-    public SensorData saveSensorData(SensorData data) {
-        // If ESP32 sent a deviceId, verify it is registered to the authenticated user
-        if (data.getDeviceId() != null && !data.getDeviceId().isBlank()) {
-            Optional<DeviceRegistry> device = deviceRegistryRepository
-                    .findByDeviceId(data.getDeviceId());
-
-            if (device.isPresent() && !device.get().getUserId().equals(data.getUserId())) {
-                throw new IllegalArgumentException(
-                        "Device '" + data.getDeviceId() + "' is not registered to this account");
-            }
-            // If device not found in registry we allow it (unregistered device falls back
-            // to JWT-based userId only). You can change this to throw if you want strict mode.
-        }
+    public SensorData save(SensorData data) {
         return repository.save(data);
     }
 
-    public List<SensorData> getAllDataForUser(Long userId) {
-        return repository.findByUserIdOrderByReceivedAtDesc(userId);
+    // Get latest N readings for a user, falls back to latest overall if none found
+    public List<SensorData> getLatestForUser(Long userId, int limit) {
+        List<SensorData> data = repository.findLatestForUser(userId, limit);
+        if (!data.isEmpty()) return data;
+        // Fallback: return latest readings regardless of user
+        return repository.findAll()
+                .stream()
+                .sorted((a, b) -> b.getReceivedAt().compareTo(a.getReceivedAt()))
+                .limit(limit)
+                .toList();
     }
 
-    public List<SensorData> getLatestDataForUser(Long userId, int limit) {
-        return repository.findLatestNForUser(userId, limit);
-    }
-
-    public Optional<SensorData> getLatestReadingForUser(Long userId) {
-        return repository.findTopByUserIdOrderByReceivedAtDesc(userId);
-    }
-
-    public List<SensorData> getRecentDataForUser(Long userId, int hours) {
-        LocalDateTime since = LocalDateTime.now().minusHours(hours);
-        return repository.findRecentDataForUser(userId, since);
-    }
-
-    @Transactional
-    public void deleteOldData(int daysToKeep) {
-        LocalDateTime cutoff = LocalDateTime.now().minusDays(daysToKeep);
-        repository.deleteByReceivedAtBefore(cutoff);
+    // Single most recent reading for a user — used for "current" display
+    // Falls back to latest overall reading if nothing found for this user
+    public Optional<SensorData> getLatestOne(Long userId) {
+        Optional<SensorData> userReading = repository.findTopByUserIdOrderByReceivedAtDesc(userId);
+        if (userReading.isPresent()) return userReading;
+        return repository.findTopByOrderByReceivedAtDesc(); // DB fallback
     }
 }
