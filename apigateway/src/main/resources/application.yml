@@ -9,7 +9,7 @@ spring:
     gateway:
       routes:
         - id: iot-service
-          uri: lb://iot-service
+          uri: lb://IOT_service
           predicates:
             - Path=/api/sensordata/**
           filters:
