@@ -15,6 +15,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import com.example.mainservice.dto.ECGReadingDTO;
+import com.example.mainservice.entity.ECGReading;
+import com.example.mainservice.repository.ECGReadingRepository;
 
 @Controller
 @RestController
@@ -25,6 +30,9 @@ public class PatientController {
 
     @Autowired
     private EmergencyService emergencyService;
+
+    @Autowired
+    private ECGReadingRepository ecgReadingRepository;
 
     @PostMapping("/create")
     public ResponseEntity<Map<String, Object>> createPatient(@RequestBody PatientDTO patientDto) {
@@ -79,8 +87,7 @@ public class PatientController {
                             .filter(p -> p.getId().equals(patientId))
                             .findFirst()
                             .orElseThrow(() -> new RuntimeException("Patient not found"))
-                            .getUsername()
-            );
+                            .getUsername());
 
             Map<String, Object> panelData = new HashMap<>();
 
@@ -144,6 +151,34 @@ public class PatientController {
             return ResponseEntity.ok(patient);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    // NEW: Get patient's persistent ECG history
+    @GetMapping("/ecg/history/{patientId}")
+    public ResponseEntity<?> getECGHistory(@PathVariable Long patientId) {
+        try {
+            List<ECGReading> history = ecgReadingRepository.findByPatientIdOrderByRecordedAtDesc(patientId);
+
+            List<ECGReadingDTO> dtoList = history.stream().map(h -> ECGReadingDTO.builder()
+                    .id(h.getId())
+                    .patientId(h.getPatient().getId())
+                    .prediction(h.getPrediction())
+                    .probability(h.getProbability())
+                    .meanHR(h.getMeanHR())
+                    .sdnn(h.getSdnn())
+                    .rmssd(h.getRmssd())
+                    .beats(h.getBeats())
+                    .status(h.getStatus())
+                    .rationale(h.getRationale())
+                    .waveformJson(h.getWaveformJson())
+                    .recordedAt(h.getRecordedAt())
+                    .build()).collect(Collectors.toList());
+
+            return ResponseEntity.ok(dtoList);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 }

@@ -87,7 +87,16 @@ public class ReportServiceImpl implements ReportService {
         if (patientId == null) throw new IllegalArgumentException("patientId is required");
         return reportRepository.findByPatient_IdOrderByUploadedAtDesc(patientId)
                 .stream()
-                .map(r -> new ReportResponseDTO(r.getId(), r.getReportName(), r.getUploadedAt()))
+                .map(r -> new ReportResponseDTO(r.getId(), r.getReportName(), r.getUploadedAt(), r.getPatient().getId(), r.getPatient().getName()))
+                .toList();
+    }
+
+    @Override
+    public List<ReportResponseDTO> getDoctorPatientsReports(Long doctorId) {
+        if (doctorId == null) throw new IllegalArgumentException("doctorId is required");
+        return reportRepository.findByPatient_AssignedDoctorIdOrderByUploadedAtDesc(doctorId)
+                .stream()
+                .map(r -> new ReportResponseDTO(r.getId(), r.getReportName(), r.getUploadedAt(), r.getPatient().getId(), r.getPatient().getName()))
                 .toList();
     }
 

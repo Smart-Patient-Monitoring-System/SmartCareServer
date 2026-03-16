@@ -7,7 +7,7 @@ import com.example.mainservice.entity.enums.AppointmentStatus;
 import com.example.mainservice.entity.enums.PaymentStatus;
 import com.example.mainservice.repository.AppointmentRepository;
 import com.example.mainservice.repository.AppointmentTypeRepository;
-import com.example.mainservice.repository.SpecialDoctorRepository;
+import com.example.mainservice.repository.DoctorRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,16 +21,16 @@ public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
     private final DoctorAvailabilityService availabilityService;
-    private final SpecialDoctorRepository doctorRepository;
+    private final DoctorRepo doctorRepository;
     private final AppointmentTypeRepository appointmentTypeRepository;
 
     // ============================
     // BOOK APPOINTMENT
     // ============================
     @Transactional
-    public AppointmentDTO bookAppointment(AppointmentRequestDTO request) {
+    public AppointmentDTO bookAppointment(AppointmentRequestDTO request, String patientName) {
 
-        SpecialDoctor doctor = doctorRepository.findById(request.getDoctorId())
+        Doctor doctor = doctorRepository.findById(request.getDoctorId())
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
 
         AppointmentType appointmentType = appointmentTypeRepository
@@ -54,7 +54,8 @@ public class AppointmentService {
                 .bookingDate(bookedSlot.getAvailableDate())
                 .bookingTime(bookedSlot.getAvailableTime())
                 .reason(request.getReason())
-                .paymentStatus(PaymentStatus.PENDING)      // Payment not done yet
+                .patientName(patientName)
+                .paymentStatus(PaymentStatus.PENDING)
                 .appointmentStatus(AppointmentStatus.PENDING)
                 .build();
 
@@ -85,30 +86,63 @@ public class AppointmentService {
     }
 
     // ============================
+    // DOCTOR → THEIR APPOINTMENTS
+    // ============================
+    public List<AppointmentDTO> getDoctorAppointments(Long doctorId) {
+        return appointmentRepository
+                .findByDoctorIdAndPaymentStatus(doctorId, PaymentStatus.SUCCESS)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // ============================
+    // SET ZOOM/MEETING LINK
+    // ============================
+    @Transactional
+    public AppointmentDTO setMeetingLink(Long appointmentId, String link) {
+        Appointment a = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        a.setOnlineLink(link);
+        return convertToDTO(appointmentRepository.save(a));
+    }
+
+    // ============================
+    // CONFIRM APPOINTMENT
+    // ============================
+    @Transactional
+    public AppointmentDTO confirmAppointment(Long appointmentId) {
+        Appointment a = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        a.setAppointmentStatus(AppointmentStatus.CONFIRMED);
+        return convertToDTO(appointmentRepository.save(a));
+    }
+
+    // ============================
     // ENTITY → DTO
     // ============================
-    private AppointmentDTO convertToDTO(Appointment appointment) {
+    public AppointmentDTO convertToDTO(Appointment appointment) {
 
         String locationOrLink =
                 appointment.getAppointmentType().getTypeName().equalsIgnoreCase("Physical")
                         ? appointment.getPhysicalLocation()
                         : appointment.getOnlineLink();
 
-        return new AppointmentDTO(
-                appointment.getId(),
-                appointment.getAvailability() != null
-                        ? appointment.getAvailability().getId()
-                        : null,
-                appointment.getDoctor().getName(),
-                appointment.getDoctor().getSpecialty(),
-                appointment.getDoctor().getConsultationFee(),
-                appointment.getAppointmentType().getTypeName(),
-                locationOrLink,
-                appointment.getBookingDate(),
-                appointment.getBookingTime(),
-                appointment.getReason(),
-                appointment.getPaymentStatus().name(),
-                appointment.getAppointmentStatus().name()
-        );
+        AppointmentDTO dto = new AppointmentDTO();
+        dto.setAppointmentId(appointment.getId());
+        dto.setAvailabilityId(appointment.getAvailability() != null
+                ? appointment.getAvailability().getId() : null);
+        dto.setDoctorName(appointment.getDoctor().getName());
+        dto.setSpecialty(appointment.getDoctor().getPosition()); // mapped from position
+        dto.setConsultationFee(1500.0); // default fee
+        dto.setAppointmentType(appointment.getAppointmentType().getTypeName());
+        dto.setLocationOrLink(locationOrLink);
+        dto.setBookingDate(appointment.getBookingDate());
+        dto.setBookingTime(appointment.getBookingTime());
+        dto.setReason(appointment.getReason());
+        dto.setPaymentStatus(appointment.getPaymentStatus().name());
+        dto.setAppointmentStatus(appointment.getAppointmentStatus().name());
+        dto.setPatientName(appointment.getPatientName());
+        return dto;
     }
 }

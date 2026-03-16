@@ -5,6 +5,7 @@ import com.example.mainservice.entity.Appointment;
 import com.example.mainservice.entity.enums.AppointmentStatus;
 import com.example.mainservice.entity.enums.PaymentStatus;
 import com.example.mainservice.repository.AppointmentRepository;
+import com.example.mainservice.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +15,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/appointments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class AdminAppointmentController {
 
     private final AppointmentRepository appointmentRepository;
+    private final AppointmentService appointmentService;
 
     // 🔹 GET ALL APPOINTMENTS
     @GetMapping
@@ -29,20 +31,7 @@ public class AdminAppointmentController {
 
         System.out.println("PAID APPOINTMENTS = " + list.size());
 
-        return list.stream().map(a -> new AppointmentDTO(
-                a.getId(),
-                a.getAvailability() != null ? a.getAvailability().getId() : null,
-                a.getDoctor() != null ? a.getDoctor().getName() : "N/A",
-                a.getDoctor() != null ? a.getDoctor().getSpecialty() : "N/A",
-                a.getDoctor() != null ? a.getDoctor().getConsultationFee() : 0.0,
-                a.getAppointmentType().getTypeName(),
-                a.getPhysicalLocation() != null ? a.getPhysicalLocation() : a.getOnlineLink(),
-                a.getBookingDate(),
-                a.getBookingTime(),
-                a.getReason(),
-                a.getPaymentStatus().name(),
-                a.getAppointmentStatus().name()
-        )).toList();
+        return list.stream().map(appointmentService::convertToDTO).toList();
     }
 
     // 🔹 CONFIRM APPOINTMENT
@@ -67,4 +56,4 @@ public class AdminAppointmentController {
 
         return ResponseEntity.ok("Confirmed");
     }
-}
+}

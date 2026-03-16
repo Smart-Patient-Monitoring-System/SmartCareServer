@@ -15,11 +15,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/vital-signs")
-//@CrossOrigin(
-//        origins = "http://localhost:5173",
-//        allowedHeaders = "*",
-//        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE, RequestMethod.OPTIONS}
-//)
+// 
 public class VitalSignsController {
 
     private static final Logger logger = LoggerFactory.getLogger(VitalSignsController.class);
@@ -107,6 +103,30 @@ public class VitalSignsController {
 
         } catch (Exception e) {
             logger.error("Failed to fetch latest vital signs: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch latest vital signs"));
+        }
+    }
+
+    /**
+     * Get latest vital signs for a specific patient (for doctors)
+     * GET /api/vital-signs/patient/{patientId}/latest
+     */
+    @GetMapping("/patient/{patientId}/latest")
+    public ResponseEntity<?> getLatestVitalSignsByPatientId(@PathVariable Long patientId) {
+        logger.info("Fetching latest vital signs for patient ID: {}", patientId);
+
+        try {
+            VitalSigns latest = service.getLatestVitalSigns(patientId);
+
+            if (latest == null) {
+                return ResponseEntity.ok(Map.of("message", "No vital signs found"));
+            }
+
+            return ResponseEntity.ok(latest);
+
+        } catch (Exception e) {
+            logger.error("Failed to fetch latest vital signs for patient {}: {}", patientId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to fetch latest vital signs"));
         }

@@ -47,4 +47,8 @@ public class Doctor {
     public Doctor() {
 
     }
+
+    //one doctor have many available date and time
+    @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL)
+    private java.util.List<DoctorAvailability> availabilities;
 }

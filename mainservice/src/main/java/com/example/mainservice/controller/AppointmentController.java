@@ -7,10 +7,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:5173")
+
 @RestController
 @RequestMapping("/api/appointments")
 @RequiredArgsConstructor
@@ -19,9 +20,10 @@ public class AppointmentController {
     private final AppointmentService appointmentService;
 
     @PostMapping("/book")
-    public ResponseEntity<?> bookAppointment(@RequestBody AppointmentRequestDTO dto) {
+    public ResponseEntity<?> bookAppointment(@RequestBody AppointmentRequestDTO dto, Principal principal) {
         try {
-            return ResponseEntity.ok(appointmentService.bookAppointment(dto));
+            String patientName = (principal != null) ? principal.getName() : "Unknown";
+            return ResponseEntity.ok(appointmentService.bookAppointment(dto, patientName));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {

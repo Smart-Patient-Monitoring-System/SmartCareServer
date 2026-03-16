@@ -1,8 +1,8 @@
-
 package com.example.mainservice.service;
 
 import com.example.mainservice.dto.SpecialDoctorDTO;
-import com.example.mainservice.entity.SpecialDoctor;
+import com.example.mainservice.entity.Doctor;
+import com.example.mainservice.repository.DoctorRepo;
 import com.example.mainservice.repository.SpecialDoctorRepository;
 import org.springframework.stereotype.Service;
 
@@ -12,79 +12,55 @@ import java.util.stream.Collectors;
 @Service
 public class SpecialDoctorService {
 
-    private final SpecialDoctorRepository repository;
+    private final DoctorRepo doctorRepo;
+    private final SpecialDoctorRepository legacyRepo;
 
-    public SpecialDoctorService(SpecialDoctorRepository repository) {
-        this.repository = repository;
+    public SpecialDoctorService(DoctorRepo doctorRepo, SpecialDoctorRepository legacyRepo) {
+        this.doctorRepo = doctorRepo;
+        this.legacyRepo = legacyRepo;
     }
 
-    // Get all doctors fro databse Get all doctors from database  Convert each entity to DTO Return list
+    // Get all doctors from the main `doctor` table
     public List<SpecialDoctorDTO> getAllDoctors() {
-        return repository.findAll().stream()
+        return doctorRepo.findAll().stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
     // Get by ID
     public SpecialDoctorDTO getDoctorById(Long id) {
-        return repository.findById(id)
+        return doctorRepo.findById(id)
                 .map(this::mapToDTO)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
     }
 
-    // Add doctor
+    // Add doctor (Not used by new admin portal, but kept for compatibility)
     public SpecialDoctorDTO addDoctor(SpecialDoctorDTO dto) {
-        SpecialDoctor doctor = new SpecialDoctor();
-        doctor.setRegistrationNumber(dto.getRegistrationNumber());
-        doctor.setName(dto.getName());
-        doctor.setSpecialty(dto.getSpecialty());
-        doctor.setConsultationFee(dto.getConsultationFee());
-        doctor.setProfilePhoto(dto.getProfilePhoto());
-        doctor.setDescription(dto.getDescription());
-        doctor.setQualification(dto.getQualification());
-        doctor.setPhoneNumber(dto.getPhoneNumber());
-        doctor.setEmail(dto.getEmail());
-
-        SpecialDoctor saved = repository.save(doctor);
-        return mapToDTO(saved);
+        throw new UnsupportedOperationException("Doctors should be created via the Admin Portal.");
     }
 
-    // Update doctor
+    // Update doctor (Not used by new admin portal)
     public SpecialDoctorDTO updateDoctor(Long id, SpecialDoctorDTO dto) {
-        SpecialDoctor doctor = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
-
-        doctor.setRegistrationNumber(dto.getRegistrationNumber());
-        doctor.setName(dto.getName());
-        doctor.setSpecialty(dto.getSpecialty());
-        doctor.setConsultationFee(dto.getConsultationFee());
-        doctor.setProfilePhoto(dto.getProfilePhoto());
-        doctor.setDescription(dto.getDescription());
-        doctor.setQualification(dto.getQualification());
-        doctor.setPhoneNumber(dto.getPhoneNumber());
-        doctor.setEmail(dto.getEmail());
-
-        SpecialDoctor updated = repository.save(doctor);
-        return mapToDTO(updated);
+         throw new UnsupportedOperationException("Doctors should be updated via the Admin Portal.");
     }
 
-    // Delete doctor
+    // Delete doctor (Not used by new admin portal)
     public void deleteDoctor(Long id) {
-        repository.deleteById(id);
+        throw new UnsupportedOperationException("Doctors should be deleted via the Admin Portal.");
     }
 
-    // Helper to map entity → DTO
-    private SpecialDoctorDTO mapToDTO(SpecialDoctor doc) {
+    // Helper to map Doctor entity → SpecialDoctorDTO
+    private SpecialDoctorDTO mapToDTO(Doctor doc) {
         return new SpecialDoctorDTO(
                 doc.getId(),
-                doc.getRegistrationNumber(),
+                doc.getDoctorRegNo(),     // Maps to registrationNumber
                 doc.getName(),
-                doc.getSpecialty(),
-                doc.getConsultationFee(),
-                doc.getProfilePhoto(),
-                doc.getDescription(),
-                doc.getQualification(),
-                doc.getPhoneNumber(),
+                doc.getPosition(),        // Maps to specialty
+                1500.0,                   // Default consultation fee (or calculate if needed)
+                null,                     // profilePhoto
+                "Hospital: " + doc.getHospital(), // description
+                doc.getPosition(),        // qualification
+                doc.getContactNo(),       // phoneNumber
                 doc.getEmail()
         );
     }

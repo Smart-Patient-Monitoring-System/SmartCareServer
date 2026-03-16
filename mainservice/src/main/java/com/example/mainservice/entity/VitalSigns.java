@@ -40,6 +40,9 @@ public class VitalSigns {
     // Weight
     private Double weight;
 
+    // Room number/location
+    private String room;
+
     // Date and Time
     private LocalDateTime measurementDateTime;
 
@@ -57,4 +60,12 @@ public class VitalSigns {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
+    // ----- Cached evaluation fields from VitalReports-AI -----
+    private String triageLevel; // e.g., CRITICAL, HIGH, NORMAL
+    private String spo2Status; // GOOD, AVERAGE, BAD, CRITICAL
+    private String pressureStatus;
+    private String heartRateStatus;
+    private String temperatureStatus;
+    private String bloodSugarStatus;
 }

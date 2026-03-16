@@ -36,7 +36,7 @@ public class PatientDTO {
 
     private String bloodType;
 
-    //Emergency panel fields
+    // Emergency panel fields
     private String city;
     private String district;
     private String postalCode;
@@ -49,5 +49,8 @@ public class PatientDTO {
     private String currentMedications;
     private String pastSurgeries;
     private String emergencyNotes;
+
+    // Doctor assignment
+    private Long assignedDoctorId;
 
 }

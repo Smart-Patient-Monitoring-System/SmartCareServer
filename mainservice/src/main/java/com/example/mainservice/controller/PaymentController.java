@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
+
 public class PaymentController {
 
     private final PaymentService paymentService;
@@ -93,6 +93,39 @@ public class PaymentController {
 
         // Return 'ok' to PayHere
         return "ok";
+    }
+
+    // ==========================================
+    // DEVELOPMENT ONLY: BYPASS WEBHOOK
+    // Since ngrok might be offline, this allows 
+    // manually marking ALL PENDING appointments as SUCCESS.
+    // ==========================================
+    @GetMapping("/dev-success-all")
+    public String manualSuccessAll() {
+        try {
+            java.util.List<Appointment> pendingAppointments = appointmentRepository.findByPaymentStatus(PaymentStatus.PENDING);
+            int count = 0;
+            
+            for (Appointment appointment : pendingAppointments) {
+                appointment.setPaymentStatus(PaymentStatus.SUCCESS);
+                appointmentRepository.save(appointment);
+
+                Payment payment = new Payment();
+                payment.setAppointment(appointment);
+                payment.setAmount(1500.0); // Default fee
+                payment.setOrderId("DEV_BYPASS_" + appointment.getId());
+                payment.setTransactionId("DEV_TXN_" + System.currentTimeMillis() + "_" + count);
+                payment.setPaymentGateway("PayHere (Dev Bypass)");
+                payment.setPaymentStatus(PaymentStatus.SUCCESS);
+                paymentRepository.save(payment);
+                
+                count++;
+            }
+
+            return "Successfully marked " + count + " pending appointments as PAID without webhook!";
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
     }
 }
 

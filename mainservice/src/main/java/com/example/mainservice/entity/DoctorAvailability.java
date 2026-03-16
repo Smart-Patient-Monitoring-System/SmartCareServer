@@ -22,7 +22,7 @@ public class DoctorAvailability {
 
     @ManyToOne
     @JoinColumn(name = "doctor_id")
-    private SpecialDoctor doctor;
+    private Doctor doctor;
 
     @Column(name = "is_booked", nullable = false)
     private Boolean isBooked = false;  // ensures default false

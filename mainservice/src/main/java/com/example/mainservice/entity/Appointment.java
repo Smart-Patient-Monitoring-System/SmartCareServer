@@ -29,7 +29,7 @@ public class Appointment {
 
     @ManyToOne
     @JoinColumn(name = "doctor_id")
-    private SpecialDoctor doctor;
+    private Doctor doctor;
 
     @ManyToOne
     @JoinColumn(name = "appointment_type_id")
@@ -46,6 +46,10 @@ public class Appointment {
     private String physicalLocation;
 
     private String onlineLink;
+
+    /* ================= PATIENT WHO BOOKED ================= */
+
+    private String patientName;
 
     /* ================= PAYMENT ================= */
 

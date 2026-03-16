@@ -8,15 +8,18 @@ public class VitalStatus {
     private HealthStatus pressureStatus;
     private HealthStatus heartRateStatus;
     private HealthStatus temperatureStatus;
+    private HealthStatus bloodSugarStatus;
 
     public VitalStatus(HealthStatus spo2Status,
-                       HealthStatus pressureStatus,
-                       HealthStatus heartRateStatus,
-                       HealthStatus temperatureStatus) {
+            HealthStatus pressureStatus,
+            HealthStatus heartRateStatus,
+            HealthStatus temperatureStatus,
+            HealthStatus bloodSugarStatus) {
         this.spo2Status = spo2Status;
         this.pressureStatus = pressureStatus;
         this.heartRateStatus = heartRateStatus;
         this.temperatureStatus = temperatureStatus;
+        this.bloodSugarStatus = bloodSugarStatus;
     }
 
     public HealthStatus getSpo2Status() {
@@ -33,5 +36,9 @@ public class VitalStatus {
 
     public HealthStatus getTemperatureStatus() {
         return temperatureStatus;
+    }
+
+    public HealthStatus getBloodSugarStatus() {
+        return bloodSugarStatus;
     }
 }

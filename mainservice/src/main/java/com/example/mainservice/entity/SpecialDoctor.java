@@ -2,7 +2,6 @@ package com.example.mainservice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.util.List;
 
 @Entity
 @Getter
@@ -41,7 +40,4 @@ public class SpecialDoctor {
     private String email;
 
 
-    //one doctor have many available date and time
-    @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL)
-    private List<DoctorAvailability> availabilities;
 }

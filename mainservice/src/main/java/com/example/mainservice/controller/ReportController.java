@@ -64,6 +64,17 @@ public class ReportController {
         }
     }
 
+    // ✅ React: GET /api/doctor/{doctorId}/patients/reports
+    @GetMapping("/doctor/{doctorId}/patients/reports")
+    public ResponseEntity<List<ReportResponseDTO>> getDoctorPatientsReports(@PathVariable Long doctorId) {
+        try {
+            return ResponseEntity.ok(service.getDoctorPatientsReports(doctorId));
+        } catch (Exception e) {
+            logger.error("Failed to fetch doctor's patients reports", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     // ✅ React: GET /api/reports/{id}/download
     @GetMapping("/reports/{id}/download")
     public ResponseEntity<byte[]> downloadReport(@PathVariable Long id) {

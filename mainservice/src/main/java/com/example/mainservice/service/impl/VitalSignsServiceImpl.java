@@ -20,9 +20,12 @@ public class VitalSignsServiceImpl implements VitalSignsService {
 
     private static final Logger logger = LoggerFactory.getLogger(VitalSignsServiceImpl.class);
     private final VitalSignsRepository repository;
+    private final com.example.mainservice.client.VitalReportsClient vitalReportsClient;
 
-    public VitalSignsServiceImpl(VitalSignsRepository repository) {
+    public VitalSignsServiceImpl(VitalSignsRepository repository,
+            com.example.mainservice.client.VitalReportsClient vitalReportsClient) {
         this.repository = repository;
+        this.vitalReportsClient = vitalReportsClient;
     }
 
     @Override
@@ -38,13 +41,29 @@ public class VitalSignsServiceImpl implements VitalSignsService {
             // Validate blood pressure pairs
             if ((dto.getBloodPressureSystolic() != null && dto.getBloodPressureDiastolic() == null) ||
                     (dto.getBloodPressureSystolic() == null && dto.getBloodPressureDiastolic() != null)) {
-                throw new IllegalArgumentException("Both systolic and diastolic blood pressure values must be provided together");
+                throw new IllegalArgumentException(
+                        "Both systolic and diastolic blood pressure values must be provided together");
             }
 
             // Parse date and time
             LocalDate date = LocalDate.parse(dto.getDate());
             LocalTime time = LocalTime.parse(dto.getTime());
             LocalDateTime measurementDateTime = LocalDateTime.of(date, time);
+
+            // Prepare payload for AI evaluation
+            com.example.mainservice.dto.VitalReadingRequestDTO request = com.example.mainservice.dto.VitalReadingRequestDTO
+                    .builder()
+                    .spo2(dto.getSpo2() != null ? dto.getSpo2() : 0)
+                    .systolicBP(dto.getBloodPressureSystolic() != null ? dto.getBloodPressureSystolic() : 0)
+                    .heartRate(dto.getHeartRate() != null ? dto.getHeartRate() : 0)
+                    .temperature(dto.getTemperature() != null ? dto.getTemperature() : 0.0)
+                    .bloodSugar(dto.getBloodSugar() != null ? dto.getBloodSugar() : 0.0)
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+
+            // Evaluate via VitalReports-AI
+            com.example.mainservice.dto.VitalAssessmentResponseDTO assessment = vitalReportsClient
+                    .evaluateVitals(request);
 
             // Create entity
             VitalSigns vitalSigns = new VitalSigns();
@@ -59,8 +78,27 @@ public class VitalSignsServiceImpl implements VitalSignsService {
             vitalSigns.setNotes(dto.getNotes());
             vitalSigns.setPatientId(patientId);
 
+            // Apply AI Assessment
+            if (assessment != null && assessment.getVitalStatus() != null) {
+                vitalSigns.setTriageLevel(assessment.getTriageLevel());
+                vitalSigns.setSpo2Status(assessment.getVitalStatus().getSpo2Status());
+                vitalSigns.setPressureStatus(assessment.getVitalStatus().getPressureStatus());
+                vitalSigns.setHeartRateStatus(assessment.getVitalStatus().getHeartRateStatus());
+                vitalSigns.setTemperatureStatus(assessment.getVitalStatus().getTemperatureStatus());
+                vitalSigns.setBloodSugarStatus(assessment.getVitalStatus().getBloodSugarStatus());
+                logger.info("AI Assessment Result — Triage: {}, BP: {}, HR: {}, SpO2: {}, Temp: {}, Sugar: {}",
+                        assessment.getTriageLevel(),
+                        assessment.getVitalStatus().getPressureStatus(),
+                        assessment.getVitalStatus().getHeartRateStatus(),
+                        assessment.getVitalStatus().getSpo2Status(),
+                        assessment.getVitalStatus().getTemperatureStatus(),
+                        assessment.getVitalStatus().getBloodSugarStatus());
+            }
+
             VitalSigns saved = repository.save(vitalSigns);
-            logger.info("Vital signs saved successfully with ID: {}", saved.getId());
+            logger.info("Vital signs saved successfully with ID: {}, triageLevel: {}", saved.getId(),
+                    saved.getTriageLevel());
+
             return saved;
 
         } catch (Exception e) {

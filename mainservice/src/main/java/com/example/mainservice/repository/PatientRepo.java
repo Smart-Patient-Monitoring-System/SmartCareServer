@@ -16,6 +16,8 @@ public interface PatientRepo extends JpaRepository<Patient, Long> {
 
     boolean existsByEmail(String email);
 
-    // For doctor-side patient search in chat
-    List<Patient> findByNameContainingIgnoreCaseOrNicNoContainingIgnoreCase(String name, String nicNo);
+    // Doctor assignment queries
+    List<Patient> findByAssignedDoctorId(Long doctorId);
+
+    long countByAssignedDoctorId(Long doctorId);
 }

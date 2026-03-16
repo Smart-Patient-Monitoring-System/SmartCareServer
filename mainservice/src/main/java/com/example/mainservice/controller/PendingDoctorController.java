@@ -34,10 +34,10 @@ public class PendingDoctorController {
             return ResponseEntity.status(HttpStatus.CREATED).body(pendingdoctor);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse(e.getMessage()));
+                    .body(new PendingDoctorController.ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("An error occurred during doctor creation: " + e.getMessage()));
+                    .body(new PendingDoctorController.ErrorResponse("An error occurred during doctor creation: " + e.getMessage()));
         }
     }
 
@@ -65,7 +65,7 @@ public class PendingDoctorController {
 
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<PendingDoctorController.ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
@@ -78,7 +78,7 @@ public class PendingDoctorController {
                 .orElse("Validation failed");
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse(errorMessage));
+                .body(new PendingDoctorController.ErrorResponse(errorMessage));
     }
 
     @Data

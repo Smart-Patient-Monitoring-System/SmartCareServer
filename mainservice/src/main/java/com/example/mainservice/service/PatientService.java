@@ -21,6 +21,7 @@ public class PatientService {
     private final PasswordEncoder passwordEncoder;
     private final EmergencyContactRepository emergencyContactRepository;
     private final LocationService locationService;
+    private final DoctorAssignmentService doctorAssignmentService;
 
     public Patient create(PatientDTO patient) {
 
@@ -64,6 +65,11 @@ public class PatientService {
                 .pastSurgeries(patient.getPastSurgeries())
                 .emergencyNotes(patient.getEmergencyNotes())
                 .build();
+
+        // Auto-assign doctor using Round Robin
+        Long assignedDoctorId = doctorAssignmentService.assignDoctor();
+        p.setAssignedDoctorId(assignedDoctorId);
+
         Patient savedPatient = patientrepo.save(p);
 
         // Auto-create emergency contact from guardian info
@@ -101,6 +107,7 @@ public class PatientService {
                 .currentMedications(p.getCurrentMedications())
                 .pastSurgeries(p.getPastSurgeries())
                 .emergencyNotes(p.getEmergencyNotes())
+                .assignedDoctorId(p.getAssignedDoctorId())
                 .build()).toList();
     }
 
@@ -204,6 +211,7 @@ public class PatientService {
         dto.setCurrentMedications(patient.getCurrentMedications());
         dto.setPastSurgeries(patient.getPastSurgeries());
         dto.setEmergencyNotes(patient.getEmergencyNotes());
+        dto.setAssignedDoctorId(patient.getAssignedDoctorId());
         return dto;
     }
 

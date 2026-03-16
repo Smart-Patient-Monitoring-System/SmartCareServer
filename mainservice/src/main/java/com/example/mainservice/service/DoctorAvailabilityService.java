@@ -3,9 +3,9 @@ package com.example.mainservice.service;
 import com.example.mainservice.dto.DoctorAvailabilityDTO;
 import com.example.mainservice.dto.SaveAvailabilityRequest;
 import com.example.mainservice.entity.DoctorAvailability;
-import com.example.mainservice.entity.SpecialDoctor;
+import com.example.mainservice.entity.Doctor;
 import com.example.mainservice.repository.DoctorAvailabilityRepository;
-import com.example.mainservice.repository.SpecialDoctorRepository;
+import com.example.mainservice.repository.DoctorRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class DoctorAvailabilityService {
 
     private final DoctorAvailabilityRepository repository;
-    private final SpecialDoctorRepository doctorRepository;
+    private final DoctorRepo doctorRepository;
 
     // ✅ GET available slots (return entities, not DTOs)
     public List<DoctorAvailability> getAvailableSlots(Long doctorId, LocalDate date) {
@@ -28,7 +28,7 @@ public class DoctorAvailabilityService {
 
     // ADD multiple slots
     public void addAvailability(SaveAvailabilityRequest request) {
-        SpecialDoctor doctor = doctorRepository.findById(request.getDoctorId())
+        Doctor doctor = doctorRepository.findById(request.getDoctorId())
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
 
         List<DoctorAvailability> slots = request.getTimes().stream()

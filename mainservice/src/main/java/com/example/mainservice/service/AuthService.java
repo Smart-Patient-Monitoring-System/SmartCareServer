@@ -320,7 +320,6 @@ public class AuthService {
                     .email(doctor.getEmail())
                     .role("DOCTOR")
                     .name(doctor.getName())
-                    .patientId(doctor.getId())
                     .build();
         }
 

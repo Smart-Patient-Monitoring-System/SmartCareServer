@@ -62,7 +62,7 @@ public class PaymentService {
 
         double amount = (amountParam != null && !amountParam.isEmpty())
                 ? Double.parseDouble(amountParam)
-                : appointment.getDoctor().getConsultationFee();
+                : 1500.0;
 
         if (amount <= 0) amount = 500.00;
 

@@ -2,15 +2,12 @@ package com.example.mainservice.service;
 
 import com.example.mainservice.dto.ChatMessageDTO;
 import com.example.mainservice.dto.DoctorSearchDTO;
-import com.example.mainservice.dto.PatientSearchDTO;
 import com.example.mainservice.entity.ChatMessage;
 import com.example.mainservice.entity.Conversation;
 import com.example.mainservice.entity.Doctor;
-import com.example.mainservice.entity.Patient;
 import com.example.mainservice.repository.ChatMessageRepository;
 import com.example.mainservice.repository.ConversationRepository;
 import com.example.mainservice.repository.DoctorRepo;
-import com.example.mainservice.repository.PatientRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,9 +25,6 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final ConversationRepository conversationRepository;
     private final DoctorRepo doctorRepo;
-    private final PatientRepo patientRepo;
-
-    // ========= ALL EXISTING METHODS UNCHANGED =========
 
     @Transactional
     public ChatMessage saveMessage(ChatMessageDTO messageDTO) {
@@ -48,6 +42,7 @@ public class ChatService {
                 .read(false)
                 .build();
 
+        // map attachments if provided
         if (messageDTO.getAttachments() != null && !messageDTO.getAttachments().isEmpty()) {
             var attList = messageDTO.getAttachments().stream().map(a ->
                     com.example.mainservice.entity.ChatAttachment.builder()
@@ -58,6 +53,7 @@ public class ChatService {
                             .message(chatMessage)
                             .build()
             ).toList();
+
             chatMessage.setAttachments(attList);
         }
 
@@ -79,8 +75,10 @@ public class ChatService {
     public void markMessagesAsRead(Long conversationId, Long userId) {
         List<ChatMessage> unreadMessages = chatMessageRepository
                 .findByConversationIdAndReceiverIdAndReadFalse(conversationId, userId);
+
         unreadMessages.forEach(msg -> msg.setRead(true));
         chatMessageRepository.saveAll(unreadMessages);
+
         log.info("Marked {} messages as read for conversation {}", unreadMessages.size(), conversationId);
     }
 
@@ -95,6 +93,7 @@ public class ChatService {
 
     @Transactional
     public Conversation createConversation(Long patientId, Long doctorId) {
+        // NO int conversion. Keep IDs Long everywhere.
         return conversationRepository.findByPatientIdAndDoctorId(patientId, doctorId)
                 .orElseGet(() -> {
                     log.info("Creating new conversation between patient {} and doctor {}", patientId, doctorId);
@@ -112,18 +111,24 @@ public class ChatService {
         return count != null ? count : 0;
     }
 
-    // ========= Doctor search (unchanged) =========
+    // ========= Doctor search =========
 
     public List<DoctorSearchDTO> searchDoctors(String searchTerm) {
         log.info("Searching for doctors with term: {}", searchTerm);
+
         List<Doctor> doctors;
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
             doctors = doctorRepo.findAll();
         } else {
             doctors = doctorRepo.findByNameContainingIgnoreCaseOrDoctorRegNoContaining(
-                    searchTerm.trim(), searchTerm.trim());
+                    searchTerm.trim(),
+                    searchTerm.trim()
+            );
         }
-        return doctors.stream().map(this::convertToDoctorSearchDTO).collect(Collectors.toList());
+
+        return doctors.stream()
+                .map(this::convertToDoctorSearchDTO)
+                .collect(Collectors.toList());
     }
 
     public List<DoctorSearchDTO> getAllDoctors() {
@@ -141,7 +146,10 @@ public class ChatService {
 
     public List<DoctorSearchDTO> searchDoctorsByHospital(String hospital) {
         log.info("Searching doctors by hospital: {}", hospital);
-        return doctorRepo.findByHospitalContainingIgnoreCase(hospital).stream()
+
+        List<Doctor> doctors = doctorRepo.findByHospitalContainingIgnoreCase(hospital);
+
+        return doctors.stream()
                 .map(this::convertToDoctorSearchDTO)
                 .collect(Collectors.toList());
     }
@@ -155,39 +163,6 @@ public class ChatService {
                 .position(doctor.getPosition())
                 .email(doctor.getEmail())
                 .contactNo(doctor.getContactNo())
-                .build();
-    }
-
-    // ========= Patient search (NEW — for doctor side) =========
-
-    public List<PatientSearchDTO> getAllPatients() {
-        log.info("Fetching all patients for chat");
-        return patientRepo.findAll().stream()
-                .map(this::convertToPatientSearchDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<PatientSearchDTO> searchPatients(String searchTerm) {
-        log.info("Searching for patients with term: {}", searchTerm);
-        List<Patient> patients;
-        if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            patients = patientRepo.findAll();
-        } else {
-            patients = patientRepo.findByNameContainingIgnoreCaseOrNicNoContainingIgnoreCase(
-                    searchTerm.trim(), searchTerm.trim());
-        }
-        return patients.stream().map(this::convertToPatientSearchDTO).collect(Collectors.toList());
-    }
-
-    private PatientSearchDTO convertToPatientSearchDTO(Patient patient) {
-        return PatientSearchDTO.builder()
-                .id(patient.getId())
-                .name(patient.getName())
-                .nicNo(patient.getNicNo())
-                .email(patient.getEmail())
-                .contactNo(patient.getContactNo())
-                .gender(patient.getGender())
-                .avatar(null)
                 .build();
     }
 }

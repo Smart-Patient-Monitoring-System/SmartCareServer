@@ -27,7 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-//@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
+//
 public class AuthController {
 
     private final AuthService authService;
@@ -43,9 +43,13 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse("Invalid email or password"));
         } catch (RuntimeException e) {
-            // All business logic errors (wrong password, invalid role, etc.) -> 401
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Invalid email or password"));
+            // Handle role mismatch or other runtime exceptions
+            // Return 400 Bad Request for role/validation errors, 403 for access denied
+            HttpStatus status = e.getMessage().contains("role") || e.getMessage().contains("Role") 
+                ? HttpStatus.BAD_REQUEST 
+                : HttpStatus.FORBIDDEN;
+            return ResponseEntity.status(status)
+                    .body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             // Handle other exceptions
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
