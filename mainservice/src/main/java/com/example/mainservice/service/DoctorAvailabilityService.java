@@ -33,7 +33,7 @@ public class DoctorAvailabilityService {
 
         List<DoctorAvailability> slots = request.getTimes().stream()
                 .map(time -> DoctorAvailability.builder()
-                        .doctor(doctor)
+                        .specialDoctor(doctor)
                         .availableDate(request.getDate())
                         .availableTime(time)
                         .isBooked(false)
