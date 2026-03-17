@@ -9,8 +9,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
       interval: 15s
       timeout: 10s
-      retries: 5
-      start_period: 30s
+      retries: 8
+      start_period: 40s
 
   mysql:
     image: mysql:8.0
@@ -23,8 +23,8 @@ services:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 12
+      start_period: 40s
 
   postgres:
     image: postgres:16
@@ -38,8 +38,8 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 8
+      start_period: 25s
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.3
@@ -66,6 +66,7 @@ services:
       dockerfile: mainservice/Dockerfile
     ports:
       - "8080:8080"
+    restart: unless-stopped
     depends_on:
       mysql:
         condition: service_healthy
@@ -80,6 +81,12 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
       SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
 
   iot-service:
     build:
@@ -87,6 +94,7 @@ services:
       dockerfile: IOT_service/Dockerfile
     ports:
       - "8082:8082"
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -100,6 +108,12 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
       SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
 
   chatbotbackend:
     build:
@@ -107,6 +121,7 @@ services:
       dockerfile: chatbotbackend/Dockerfile
     ports:
       - "8081:8081"
+    restart: unless-stopped
     depends_on:
       discoveryserver:
         condition: service_healthy
@@ -115,6 +130,12 @@ services:
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
 
   vitalreports:
     build:
@@ -122,11 +143,18 @@ services:
       dockerfile: vitalReports-AI/Dockerfile
     ports:
       - "8083:8083"
+    restart: unless-stopped
     depends_on:
       discoveryserver:
         condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
 
   apigateway:
     build:
@@ -134,11 +162,32 @@ services:
       dockerfile: apigateway/Dockerfile
     ports:
       - "8088:8088"
+    restart: unless-stopped
     depends_on:
       discoveryserver:
         condition: service_healthy
+      mainservice:
+        condition: service_healthy
+      iot-service:
+        condition: service_healthy
+      chatbotbackend:
+        condition: service_healthy
+      vitalreports:
+        condition: service_healthy
+    env_file:
+      - .env
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
+      MAIN_SERVICE_URL: ${MAIN_SERVICE_URL}
+      IOT_SERVICE_URL: ${IOT_SERVICE_URL}
+      CHATBOT_SERVICE_URL: ${CHATBOT_SERVICE_URL}
+      VITALREPORTS_SERVICE_URL: ${VITALREPORTS_SERVICE_URL}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
 
   prometheus:
     image: prom/prometheus:v2.54.1

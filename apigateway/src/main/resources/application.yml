@@ -9,32 +9,24 @@ spring:
     gateway:
       routes:
         - id: iot-service
-          uri: lb://iot-service
+          uri: ${IOT_SERVICE_URL:http://iot-service:8082}
           predicates:
             - Path=/api/iot/**
-          filters:
-            - StripPrefix=0
 
         - id: chatbotbackend
-          uri: lb://chatbotbackend
+          uri: ${CHATBOT_SERVICE_URL:http://chatbotbackend:8081}
           predicates:
             - Path=/api/bot/**
-          filters:
-            - StripPrefix=0
 
         - id: vitalreports
-          uri: lb://vitalreports
+          uri: ${VITALREPORTS_SERVICE_URL:http://vitalreports:8083}
           predicates:
             - Path=/api/reports/**
-          filters:
-            - StripPrefix=0
 
         - id: mainservice
-          uri: lb://mainservice
+          uri: ${MAIN_SERVICE_URL:http://mainservice:8080}
           predicates:
             - Path=/api/**
-          filters:
-            - StripPrefix=0
 
 eureka:
   client:
@@ -48,6 +40,6 @@ management:
         include: health,info,prometheus
 logging:
   level:
-    org.springframework.cloud.gateway: TRACE
-    reactor.netty.http.client: DEBUG
-    org.springframework.web.reactive: DEBUG
+    org.springframework.cloud.gateway: INFO
+    reactor.netty.http.client: INFO
+    org.springframework.web.reactive: INFO

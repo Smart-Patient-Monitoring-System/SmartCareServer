@@ -338,7 +338,7 @@ public class AuthService {
     public AuthResponse signup(SignupRequest signupRequest) {
         // Currently only patient signup is supported via /api/auth/signup.
         // Doctors should be created via /api/doctor/create.
-        String role = signupRequest.getRole().toUpperCase();
+        String role = signupRequest.getRole() == null ? "" : signupRequest.getRole().trim().toUpperCase();
         if (!"PATIENT".equals(role)) {
             throw new RuntimeException("Only PATIENT signup is supported via this endpoint");
         }
@@ -378,7 +378,7 @@ public class AuthService {
                 patient = patientRepo.save(patient);
             }
         } catch (Exception ex) {
-            log.warn("Patient signup succeeded, but automatic doctor assignment was skipped: {}", ex.getMessage());
+            // Keep signup successful even if doctor assignment fails.
         }
 
         CustomUserDetails userDetails = new CustomUserDetails(
