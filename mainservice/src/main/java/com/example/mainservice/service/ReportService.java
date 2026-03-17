@@ -18,4 +18,5 @@ public interface ReportService {
 
     List<MedicalReport> getReportEntitiesByPatient(Long patientId);
 
+    List<ReportResponseDTO> getDoctorPatientsReports(Long doctorId);
 }

@@ -31,6 +31,9 @@ public class PaymentService {
     @Value("${payhere.notifyUrl}")
     private String notifyUrl;
 
+    @Value("${payhere.checkoutUrl:https://sandbox.payhere.lk/pay/checkout}")
+    private String checkoutUrl;
+
     private final AppointmentRepository appointmentRepository;
     private final PaymentRepository paymentRepository;
 
@@ -107,7 +110,7 @@ public class PaymentService {
                     <title>Redirecting to PayHere</title>
                 </head>
                 <body onload="document.forms[0].submit()">
-                    <form method="post" action="https://sandbox.payhere.lk/pay/checkout">
+                    <form method="post" action="%s">
                         <input type="hidden" name="merchant_id" value="%s"/>
                         <input type="hidden" name="return_url" value="%s"/>
                         <input type="hidden" name="cancel_url" value="%s"/>
@@ -128,6 +131,7 @@ public class PaymentService {
                 </body>
                 </html>
                 """.formatted(
+                checkoutUrl,
                 merchantId,
                 returnUrl,
                 cancelUrl,

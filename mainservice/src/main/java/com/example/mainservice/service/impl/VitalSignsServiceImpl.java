@@ -1,7 +1,8 @@
-// File: src/main/java/com/example/mainservice/service/impl/VitalSignsServiceImpl.java
-
 package com.example.mainservice.service.impl;
 
+import com.example.mainservice.client.VitalReportsClient;
+import com.example.mainservice.dto.VitalAssessmentResponseDTO;
+import com.example.mainservice.dto.VitalReadingRequestDTO;
 import com.example.mainservice.dto.VitalSignsDTO;
 import com.example.mainservice.entity.VitalSigns;
 import com.example.mainservice.repository.VitalSignsRepository;
@@ -20,9 +21,11 @@ public class VitalSignsServiceImpl implements VitalSignsService {
 
     private static final Logger logger = LoggerFactory.getLogger(VitalSignsServiceImpl.class);
     private final VitalSignsRepository repository;
+    private final VitalReportsClient vitalReportsClient;
 
-    public VitalSignsServiceImpl(VitalSignsRepository repository) {
+    public VitalSignsServiceImpl(VitalSignsRepository repository, VitalReportsClient vitalReportsClient) {
         this.repository = repository;
+        this.vitalReportsClient = vitalReportsClient;
     }
 
     @Override
@@ -30,23 +33,30 @@ public class VitalSignsServiceImpl implements VitalSignsService {
         logger.info("Saving vital signs for patient ID: {}", patientId);
 
         try {
-            // Validate that at least one vital sign is provided
             if (!hasAnyVitalSign(dto)) {
                 throw new IllegalArgumentException("At least one vital sign measurement must be provided");
             }
 
-            // Validate blood pressure pairs
-            if ((dto.getBloodPressureSystolic() != null && dto.getBloodPressureDiastolic() == null) ||
-                    (dto.getBloodPressureSystolic() == null && dto.getBloodPressureDiastolic() != null)) {
+            if ((dto.getBloodPressureSystolic() != null && dto.getBloodPressureDiastolic() == null)
+                    || (dto.getBloodPressureSystolic() == null && dto.getBloodPressureDiastolic() != null)) {
                 throw new IllegalArgumentException("Both systolic and diastolic blood pressure values must be provided together");
             }
 
-            // Parse date and time
             LocalDate date = LocalDate.parse(dto.getDate());
             LocalTime time = LocalTime.parse(dto.getTime());
             LocalDateTime measurementDateTime = LocalDateTime.of(date, time);
 
-            // Create entity
+            VitalReadingRequestDTO request = VitalReadingRequestDTO.builder()
+                    .spo2(dto.getSpo2() != null ? dto.getSpo2() : 0)
+                    .systolicBP(dto.getBloodPressureSystolic() != null ? dto.getBloodPressureSystolic() : 0)
+                    .heartRate(dto.getHeartRate() != null ? dto.getHeartRate() : 0)
+                    .temperature(dto.getTemperature() != null ? dto.getTemperature() : 0.0)
+                    .bloodSugar(dto.getBloodSugar() != null ? dto.getBloodSugar() : 0.0)
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+
+            VitalAssessmentResponseDTO assessment = vitalReportsClient.evaluateVitals(request);
+
             VitalSigns vitalSigns = new VitalSigns();
             vitalSigns.setBloodPressureSystolic(dto.getBloodPressureSystolic());
             vitalSigns.setBloodPressureDiastolic(dto.getBloodPressureDiastolic());
@@ -59,10 +69,18 @@ public class VitalSignsServiceImpl implements VitalSignsService {
             vitalSigns.setNotes(dto.getNotes());
             vitalSigns.setPatientId(patientId);
 
+            if (assessment != null && assessment.getVitalStatus() != null) {
+                vitalSigns.setTriageLevel(assessment.getTriageLevel());
+                vitalSigns.setSpo2Status(assessment.getVitalStatus().getSpo2Status());
+                vitalSigns.setPressureStatus(assessment.getVitalStatus().getPressureStatus());
+                vitalSigns.setHeartRateStatus(assessment.getVitalStatus().getHeartRateStatus());
+                vitalSigns.setTemperatureStatus(assessment.getVitalStatus().getTemperatureStatus());
+                vitalSigns.setBloodSugarStatus(assessment.getVitalStatus().getBloodSugarStatus());
+            }
+
             VitalSigns saved = repository.save(vitalSigns);
             logger.info("Vital signs saved successfully with ID: {}", saved.getId());
             return saved;
-
         } catch (Exception e) {
             logger.error("Failed to save vital signs: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to save vital signs: " + e.getMessage(), e);
@@ -99,11 +117,11 @@ public class VitalSignsServiceImpl implements VitalSignsService {
     }
 
     private boolean hasAnyVitalSign(VitalSignsDTO dto) {
-        return dto.getBloodPressureSystolic() != null ||
-                dto.getBloodSugar() != null ||
-                dto.getTemperature() != null ||
-                dto.getHeartRate() != null ||
-                dto.getSpo2() != null ||
-                dto.getWeight() != null;
+        return dto.getBloodPressureSystolic() != null
+                || dto.getBloodSugar() != null
+                || dto.getTemperature() != null
+                || dto.getHeartRate() != null
+                || dto.getSpo2() != null
+                || dto.getWeight() != null;
     }
 }

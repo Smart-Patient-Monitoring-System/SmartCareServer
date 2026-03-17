@@ -47,6 +47,8 @@ public class Appointment {
 
     private String onlineLink;
 
+    private String patientName;
+
     /* ================= PAYMENT ================= */
 
     @Enumerated(EnumType.STRING)

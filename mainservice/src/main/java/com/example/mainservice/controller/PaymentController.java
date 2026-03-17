@@ -5,6 +5,7 @@ import com.example.mainservice.entity.Payment;
 import com.example.mainservice.entity.enums.PaymentStatus;
 import com.example.mainservice.repository.AppointmentRepository;
 import com.example.mainservice.repository.PaymentRepository;
+import com.example.mainservice.service.DoctorAvailabilityService;
 import com.example.mainservice.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,7 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final AppointmentRepository appointmentRepository;
     private final PaymentRepository paymentRepository;
+    private final DoctorAvailabilityService doctorAvailabilityService;
 
     // Build payment form for frontend
     @GetMapping("/pay/{appointmentId}")
@@ -70,10 +72,16 @@ public class PaymentController {
 
             // Set payment and appointment status
             if ("2".equals(statusCode)) { // 2 = success
+                if (appointment.getAvailability() != null) {
+                    doctorAvailabilityService.markSlotBooked(appointment.getAvailability().getId());
+                }
                 payment.setPaymentStatus(PaymentStatus.SUCCESS);
                 appointment.setPaymentStatus(PaymentStatus.SUCCESS);
                 System.out.println("Payment SUCCESS for appointment " + appointmentId);
             } else {
+                if (appointment.getAvailability() != null) {
+                    doctorAvailabilityService.markSlotAvailable(appointment.getAvailability().getId());
+                }
                 payment.setPaymentStatus(PaymentStatus.FAILED);
                 appointment.setPaymentStatus(PaymentStatus.FAILED);
                 System.out.println("Payment FAILED for appointment " + appointmentId);
@@ -95,4 +103,3 @@ public class PaymentController {
         return "ok";
     }
 }
-
