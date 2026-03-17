@@ -32,6 +32,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/doctor")
 public class DoctorController {
+    private static final int ECG_RATIONALE_DB_SAFE_LENGTH = 250;
+
     @Autowired
     private DoctorService doctorservice;
 
@@ -177,6 +179,11 @@ public class DoctorController {
             Patient patient = patientRepo.findById(dto.getPatientId())
                     .orElseThrow(() -> new RuntimeException("Patient not found with id: " + dto.getPatientId()));
 
+            String safeRationale = dto.getRationale();
+            if (safeRationale != null && safeRationale.length() > ECG_RATIONALE_DB_SAFE_LENGTH) {
+                safeRationale = safeRationale.substring(0, ECG_RATIONALE_DB_SAFE_LENGTH);
+            }
+
             ECGReading saved = ecgReadingRepository.save(ECGReading.builder()
                     .patient(patient)
                     .prediction(dto.getPrediction())
@@ -186,7 +193,7 @@ public class DoctorController {
                     .rmssd(dto.getRmssd())
                     .beats(dto.getBeats())
                     .status(dto.getStatus())
-                    .rationale(dto.getRationale())
+                    .rationale(safeRationale)
                     .waveformJson(dto.getWaveformJson())
                     .build());
 

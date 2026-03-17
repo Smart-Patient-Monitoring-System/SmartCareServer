@@ -25,6 +25,7 @@ public class DoctorService {
     private final PatientRepo patientRepo;
     private final VitalSignsRepository vitalSignsRepository;
     private final ECGReadingRepository ecgReadingRepository;
+    private final DoctorAssignmentService doctorAssignmentService;
 
     public Doctor create(DoctorDTO doctor) {
         Doctor d = Doctor.builder()
@@ -41,7 +42,9 @@ public class DoctorService {
                 .username(doctor.getUsername())
                 .dateOfBirth(doctor.getDateOfBirth())
                 .build();
-        return doctorrepo.save(d);
+        Doctor savedDoctor = doctorrepo.save(d);
+        doctorAssignmentService.rebalancePatientsRoundRobin();
+        return savedDoctor;
     }
 
     public List<DoctorDTO> getDetails() {
@@ -64,6 +67,7 @@ public class DoctorService {
 
     public void deleteDoctor(Long id) {
         doctorrepo.deleteById(id);
+        doctorAssignmentService.rebalancePatientsRoundRobin();
     }
 
     public DoctorDTO updateDoctor(Long id, DoctorDTO dto) {
@@ -229,12 +233,27 @@ public class DoctorService {
             var ecg = ecgReadingRepository.findFirstByPatientIdOrderByRecordedAtDesc(patient.getId());
             if (ecg != null && ecg.getPrediction() != null && !"Normal".equalsIgnoreCase(ecg.getPrediction())) {
                 String prediction = ecg.getPrediction();
-                String severity = "CRITICAL";
-                if ("Abnormal".equalsIgnoreCase(prediction)
-                        || "Abnormal".equalsIgnoreCase(ecg.getStatus())
-                        || prediction.toLowerCase().contains("premature")
-                        || ecg.getProbability() < 0.70) {
-                    severity = "HIGH";
+                String normalizedPrediction = prediction.toLowerCase();
+                String normalizedStatus = ecg.getStatus() == null ? "" : ecg.getStatus().toLowerCase();
+                String severity = "HIGH";
+
+                if ("abnormal".equalsIgnoreCase(prediction)
+                        || "abnormal".equalsIgnoreCase(ecg.getStatus())
+                        || "inconclusive".equalsIgnoreCase(prediction)
+                        || "inconclusive".equalsIgnoreCase(ecg.getStatus())) {
+                    severity = "CRITICAL";
+                }
+
+                if (normalizedPrediction.contains("ventricular")
+                        || normalizedPrediction.contains("tachy")
+                        || normalizedPrediction.contains("fibrillation")
+                        || normalizedPrediction.contains("flutter")
+                        || normalizedPrediction.contains("block")
+                        || normalizedPrediction.contains("stemi")
+                        || normalizedPrediction.contains("ischemia")
+                        || normalizedPrediction.contains("premature")
+                        || normalizedStatus.contains("critical")) {
+                    severity = "CRITICAL";
                 }
 
                 alerts.add(CriticalAlertDTO.builder()

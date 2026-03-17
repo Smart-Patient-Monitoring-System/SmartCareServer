@@ -27,6 +27,8 @@ public class ECGReading {
     private double rmssd;
     private int beats;
     private String status;
+
+    @Column(columnDefinition = "LONGTEXT")
     private String rationale;
 
     @Column(columnDefinition = "LONGTEXT")
