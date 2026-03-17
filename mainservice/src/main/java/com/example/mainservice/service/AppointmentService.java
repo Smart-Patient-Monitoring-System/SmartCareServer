@@ -41,14 +41,12 @@ public class AppointmentService {
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Selected time slot not available"));
 
-        DoctorAvailability bookedSlot = availabilityService.markSlotBooked(availableSlot.getId());
-
         Appointment appointment = Appointment.builder()
                 .doctor(doctor)
                 .appointmentType(appointmentType)
-                .availability(bookedSlot)
-                .bookingDate(bookedSlot.getAvailableDate())
-                .bookingTime(bookedSlot.getAvailableTime())
+                .availability(availableSlot)
+                .bookingDate(availableSlot.getAvailableDate())
+                .bookingTime(availableSlot.getAvailableTime())
                 .reason(request.getReason())
                 .patientName(patientName)
                 .paymentStatus(PaymentStatus.PENDING)

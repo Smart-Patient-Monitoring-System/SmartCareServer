@@ -23,7 +23,7 @@ public class DoctorAvailabilityService {
 
     // ✅ GET available slots (return entities, not DTOs)
     public List<DoctorAvailability> getAvailableSlots(Long doctorId, LocalDate date) {
-        return repository.findByDoctorIdAndAvailableDateAndIsBookedFalse(doctorId, date);
+        return repository.findBySpecialDoctorIdAndAvailableDateAndIsBookedFalse(doctorId, date);
     }
 
     // ADD multiple slots
@@ -32,6 +32,11 @@ public class DoctorAvailabilityService {
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
 
         List<DoctorAvailability> slots = request.getTimes().stream()
+                .filter(time -> !repository.existsBySpecialDoctorIdAndAvailableDateAndAvailableTime(
+                        request.getDoctorId(),
+                        request.getDate(),
+                        time
+                ))
                 .map(time -> DoctorAvailability.builder()
                         .specialDoctor(doctor)
                         .availableDate(request.getDate())
@@ -70,6 +75,15 @@ public class DoctorAvailabilityService {
         }
 
         slot.setIsBooked(true);
+        return repository.save(slot);
+    }
+
+    @Transactional
+    public DoctorAvailability markSlotAvailable(Long slotId) {
+        DoctorAvailability slot = repository.findById(slotId)
+                .orElseThrow(() -> new RuntimeException("Slot not found"));
+
+        slot.setIsBooked(false);
         return repository.save(slot);
     }
 }
