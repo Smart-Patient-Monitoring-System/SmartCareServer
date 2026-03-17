@@ -18,4 +18,8 @@ public interface PatientRepo extends JpaRepository<Patient, Long> {
 
     // For doctor-side patient search in chat
     List<Patient> findByNameContainingIgnoreCaseOrNicNoContainingIgnoreCase(String name, String nicNo);
+
+    List<Patient> findByAssignedDoctorId(Long doctorId);
+
+    long countByAssignedDoctorId(Long doctorId);
 }
