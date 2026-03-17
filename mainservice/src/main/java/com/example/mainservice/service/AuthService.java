@@ -370,7 +370,16 @@ public class AuthService {
                 .build();
 
         patient = patientRepo.save(patient);
-        doctorAssignmentService.rebalancePatientsRoundRobin();
+
+        try {
+            Long assignedDoctorId = doctorAssignmentService.assignDoctor();
+            if (assignedDoctorId != null) {
+                patient.setAssignedDoctorId(assignedDoctorId);
+                patient = patientRepo.save(patient);
+            }
+        } catch (Exception ex) {
+            log.warn("Patient signup succeeded, but automatic doctor assignment was skipped: {}", ex.getMessage());
+        }
 
         CustomUserDetails userDetails = new CustomUserDetails(
                 patient.getId(),
