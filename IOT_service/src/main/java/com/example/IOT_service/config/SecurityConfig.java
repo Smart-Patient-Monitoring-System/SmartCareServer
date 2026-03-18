@@ -23,7 +23,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()   // ← open, no JWT needed
+                .anyRequest().permitAll()
             );
         return http.build();
     }
@@ -31,9 +31,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
+        // Use allowedOriginPatterns (not wildcard "*") so credentials can work if needed
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "https://*.azurecontainerapps.io"
+        ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        // allowCredentials=false: IoT device uploads use X-Device-Token header, not cookies
         config.setAllowCredentials(false);
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -41,3 +46,4 @@ public class SecurityConfig {
         return source;
     }
 }
+
