@@ -11,14 +11,9 @@ import java.util.Optional;
 @Repository
 public interface SensorDataRepository extends JpaRepository<SensorData, Long> {
 
-    // Latest N records for a specific patient
     @Query(value = "SELECT * FROM sensor_data WHERE user_id = ?1 ORDER BY received_at DESC LIMIT ?2",
-           nativeQuery = true)
+            nativeQuery = true)
     List<SensorData> findLatestForUser(Long userId, int limit);
 
-    // Most recent single record for a patient (used as fallback)
     Optional<SensorData> findTopByUserIdOrderByReceivedAtDesc(Long userId);
-
-    // Most recent record across ALL patients (for ESP32 that posts without userId)
-    Optional<SensorData> findTopByOrderByReceivedAtDesc();
 }

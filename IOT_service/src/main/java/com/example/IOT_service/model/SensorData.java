@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,7 +18,6 @@ public class SensorData {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // userId — set by ESP32 in the JSON body (no auth required)
     @Column(name = "user_id")
     private Long userId;
 
@@ -53,6 +53,8 @@ public class SensorData {
 
     @PrePersist
     protected void onCreate() {
-        receivedAt = LocalDateTime.now();
+        if (receivedAt == null) {
+            receivedAt = LocalDateTime.now();
+        }
     }
 }

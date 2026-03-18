@@ -18,23 +18,13 @@ public class SensorDataService {
         return repository.save(data);
     }
 
-    // Get latest N readings for a user, falls back to latest overall if none found
+    // Only return this patient's data
     public List<SensorData> getLatestForUser(Long userId, int limit) {
-        List<SensorData> data = repository.findLatestForUser(userId, limit);
-        if (!data.isEmpty()) return data;
-        // Fallback: return latest readings regardless of user
-        return repository.findAll()
-                .stream()
-                .sorted((a, b) -> b.getReceivedAt().compareTo(a.getReceivedAt()))
-                .limit(limit)
-                .toList();
+        return repository.findLatestForUser(userId, limit);
     }
 
-    // Single most recent reading for a user — used for "current" display
-    // Falls back to latest overall reading if nothing found for this user
+    // Return this patient's latest saved reading only
     public Optional<SensorData> getLatestOne(Long userId) {
-        Optional<SensorData> userReading = repository.findTopByUserIdOrderByReceivedAtDesc(userId);
-        if (userReading.isPresent()) return userReading;
-        return repository.findTopByOrderByReceivedAtDesc(); // DB fallback
+        return repository.findTopByUserIdOrderByReceivedAtDesc(userId);
     }
 }

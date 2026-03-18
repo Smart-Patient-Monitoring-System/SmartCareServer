@@ -1,6 +1,8 @@
 package com.example.IOT_service.controller;
 
+import com.example.IOT_service.model.Device;
 import com.example.IOT_service.model.SensorData;
+import com.example.IOT_service.service.DeviceService;
 import com.example.IOT_service.service.SensorDataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,37 +19,63 @@ import java.util.Map;
 @Slf4j
 public class SensorDataController {
 
-    private final SensorDataService service;
+    private final SensorDataService sensorDataService;
+    private final DeviceService deviceService;
 
-    // ── ESP32 posts here — no auth needed ─────────────────────────────────────
-    // ESP32 includes userId in the JSON body itself
+    // Device upload endpoint for hosted use
+    @PostMapping("/device/upload")
+    public ResponseEntity<?> receiveFromDevice(
+            @RequestHeader("X-Device-Id") String deviceId,
+            @RequestHeader("X-Device-Token") String deviceToken,
+            @RequestBody SensorData data) {
+
+        Device device = deviceService.validateDevice(deviceId, deviceToken);
+
+        data.setUserId(device.getUserId());
+        data.setDeviceId(device.getDeviceId());
+
+        SensorData saved = sensorDataService.save(data);
+
+        log.info("Saved: id={} userId={} deviceId={} bpm={} spo2={}",
+                saved.getId(),
+                saved.getUserId(),
+                saved.getDeviceId(),
+                saved.getBpm(),
+                saved.getSpo2());
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "id", saved.getId(),
+                "userId", saved.getUserId(),
+                "deviceId", saved.getDeviceId()
+        ));
+    }
+
+    // Optional localhost test endpoint - keep only during testing
     @PostMapping
-    public ResponseEntity<?> receive(@RequestBody SensorData data) {
-        SensorData saved = service.save(data);
-        log.info("Saved: id={} userId={} bpm={} spo2={}", saved.getId(), saved.getUserId(), saved.getBpm(), saved.getSpo2());
+    public ResponseEntity<?> receiveLocalTest(@RequestBody SensorData data) {
+        SensorData saved = sensorDataService.save(data);
         return ResponseEntity.ok(Map.of("success", true, "id", saved.getId()));
     }
 
-    // ── Frontend fetches latest 50 readings for a patient ─────────────────────
-    // GET /api/sensordata/patient/1/latest/50
     @GetMapping("/patient/{userId}/latest/{limit}")
     public ResponseEntity<List<SensorData>> getLatest(@PathVariable Long userId,
-                                                       @PathVariable int limit) {
-        return ResponseEntity.ok(service.getLatestForUser(userId, limit));
+                                                      @PathVariable int limit) {
+        return ResponseEntity.ok(sensorDataService.getLatestForUser(userId, limit));
     }
 
-    // ── Frontend fetches single current reading ────────────────────────────────
-    // GET /api/sensordata/patient/1/current
     @GetMapping("/patient/{userId}/current")
     public ResponseEntity<?> getCurrent(@PathVariable Long userId) {
-        return service.getLatestOne(userId)
-                .map(d -> ResponseEntity.ok((Object) d))
+        return sensorDataService.getLatestOne(userId)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElse(ResponseEntity.ok(Map.of("message", "No data yet")));
     }
 
-    // ── Health check ──────────────────────────────────────────────────────────
     @GetMapping("/health")
     public ResponseEntity<?> health() {
-        return ResponseEntity.ok(Map.of("status", "healthy", "timestamp", LocalDateTime.now()));
+        return ResponseEntity.ok(Map.of(
+                "status", "healthy",
+                "timestamp", LocalDateTime.now()
+        ));
     }
 }
