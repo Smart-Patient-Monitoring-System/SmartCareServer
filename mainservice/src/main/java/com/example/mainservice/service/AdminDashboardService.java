@@ -2,6 +2,8 @@ package com.example.mainservice.service;
 
 import com.example.mainservice.repository.DoctorRepo;
 import com.example.mainservice.repository.PatientRepo;
+import com.example.mainservice.repository.PendingDoctorRepo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
