@@ -12,6 +12,7 @@ import com.example.mainservice.repository.ECGReadingRepository;
 import com.example.mainservice.repository.EmergencyAlertRepository;
 import com.example.mainservice.repository.PatientRepo;
 import com.example.mainservice.service.DoctorService;
+import com.example.mainservice.client.VitalReportsClient;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -45,6 +46,9 @@ public class DoctorController {
 
     @Autowired
     private ECGReadingRepository ecgReadingRepository;
+
+    @Autowired
+    private VitalReportsClient vitalReportsClient;
 
     @PostMapping("/create")
     public ResponseEntity<?> createDoctor(@Valid @RequestBody DoctorDTO doctorDto) {
@@ -200,6 +204,76 @@ public class DoctorController {
             return ResponseEntity.ok(Map.of("message", "ECG reading saved successfully", "id", saved.getId()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/ecg/analyze-and-save/{patientId}", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> analyzeAndSaveECG(
+            @PathVariable Long patientId,
+            @RequestParam("dat_file") org.springframework.web.multipart.MultipartFile datFile,
+            @RequestParam("hea_file") org.springframework.web.multipart.MultipartFile heaFile) {
+        try {
+            Patient patient = patientRepo.findById(patientId)
+                    .orElseThrow(() -> new RuntimeException("Patient not found with id: " + patientId));
+
+            Map<String, Object> aiResult = vitalReportsClient.analyzeECG(String.valueOf(patientId), datFile, heaFile);
+            
+            if (aiResult == null || aiResult.containsKey("error")) {
+                throw new RuntimeException("VitalReports-AI Error: " + (aiResult != null ? aiResult.get("error") : "Null response"));
+            }
+
+            String prediction = (String) aiResult.getOrDefault("prediction", aiResult.getOrDefault("status", "Unknown"));
+            
+            double probability = parseDouble(aiResult.get("probability"));
+            int meanHR = (int) parseDouble(aiResult.get("meanHR"));
+            double sdnn = parseDouble(aiResult.get("SDNN") != null ? aiResult.get("SDNN") : aiResult.get("sdnn"));
+            double rmssd = parseDouble(aiResult.get("RMSSD") != null ? aiResult.get("RMSSD") : aiResult.get("rmssd"));
+            int beats = (int) parseDouble(aiResult.get("beats"));
+            
+            String status = (String) aiResult.getOrDefault("status", "Unknown");
+            String rationaleRaw = (String) aiResult.get("rationale");
+            String safeRationale = rationaleRaw != null ? rationaleRaw : "No rationale provided.";
+            if (safeRationale.length() > ECG_RATIONALE_DB_SAFE_LENGTH) {
+                safeRationale = safeRationale.substring(0, ECG_RATIONALE_DB_SAFE_LENGTH);
+            }
+
+            Object waveformObj = aiResult.get("waveform");
+            String waveformJson = "[]";
+            if (waveformObj != null) {
+                waveformJson = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(waveformObj);
+            }
+
+            ECGReading saved = ecgReadingRepository.save(ECGReading.builder()
+                    .patient(patient)
+                    .prediction(prediction)
+                    .probability(probability)
+                    .meanHR(meanHR)
+                    .sdnn(sdnn)
+                    .rmssd(rmssd)
+                    .beats(beats)
+                    .status(status)
+                    .rationale(safeRationale)
+                    .waveformJson(waveformJson)
+                    .build());
+
+            Map<String, Object> response = new HashMap<>(aiResult);
+            response.put("id", saved.getId());
+            response.put("message", "ECG reading analyzed and saved successfully via S2S");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    private double parseDouble(Object obj) {
+        if (obj == null) return 0.0;
+        if (obj instanceof Number) return ((Number) obj).doubleValue();
+        try {
+            return Double.parseDouble(obj.toString());
+        } catch (NumberFormatException e) {
+            return 0.0;
         }
     }
 
