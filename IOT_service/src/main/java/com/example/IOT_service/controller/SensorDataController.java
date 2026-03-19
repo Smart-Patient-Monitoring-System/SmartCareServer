@@ -29,6 +29,8 @@ public class SensorDataController {
             @RequestHeader("X-Device-Token") String deviceToken,
             @RequestBody SensorData data) {
 
+        log.info("Incoming device upload: deviceId={} bpm={} spo2={}", deviceId, data.getBpm(), data.getSpo2());
+
         Device device = deviceService.validateDevice(deviceId, deviceToken);
 
         data.setUserId(device.getUserId());

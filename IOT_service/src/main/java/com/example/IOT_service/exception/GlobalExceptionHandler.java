@@ -13,7 +13,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleRuntime(RuntimeException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+        HttpStatus status = "Invalid or inactive device".equals(ex.getMessage())
+                ? HttpStatus.UNAUTHORIZED
+                : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(Map.of(
                 "error", ex.getMessage(),
                 "timestamp", LocalDateTime.now().toString()
         ));
