@@ -177,6 +177,8 @@ public class DoctorService {
                         || "HIGH".equalsIgnoreCase(overallRisk) || "MEDIUM".equalsIgnoreCase(overallRisk)
                         || "BAD".equalsIgnoreCase(overallRisk)) {
 
+                    int initialAlertsCount = alerts.size();
+
                     if ("CRITICAL".equalsIgnoreCase(vitals.getSpo2Status()) || "BAD".equalsIgnoreCase(vitals.getSpo2Status())) {
                         alerts.add(CriticalAlertDTO.builder()
                                 .patientId(patient.getId()).patientName(patient.getName()).room(roomVal)
@@ -219,6 +221,17 @@ public class DoctorService {
                                 .currentValue(vitals.getTemperature() + " C").normalRange("36.1-37.2C")
                                 .recordedAt(vitals.getMeasurementDateTime()).build());
                     }
+
+                    if (alerts.size() == initialAlertsCount && ("CRITICAL".equalsIgnoreCase(overallRisk) || "HIGH".equalsIgnoreCase(overallRisk))) {
+                        alerts.add(CriticalAlertDTO.builder()
+                                .patientId(patient.getId()).patientName(patient.getName()).room(roomVal)
+                                .alertTitle("AI Vitals Assessment: " + overallRisk)
+                                .description("VitalReports AI classified combined vitals as " + overallRisk + " risk.")
+                                .severity("CRITICAL".equalsIgnoreCase(overallRisk) ? "CRITICAL" : "HIGH")
+                                .currentValue("View Profile").normalRange("N/A")
+                                .recordedAt(vitals.getMeasurementDateTime()).build());
+                    }
+
                 } else if (vitals.getTriageLevel() == null && ("CRITICAL".equals(overallRisk) || "HIGH".equals(overallRisk))) {
                     alerts.add(CriticalAlertDTO.builder()
                             .patientId(patient.getId()).patientName(patient.getName()).room(roomVal)
