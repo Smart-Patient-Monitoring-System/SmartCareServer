@@ -8,8 +8,7 @@ import com.example.vitalReports.domain.model.VitalReading;
 import com.example.vitalReports.service.VitalProcessingService;
 
 @RestController
-@RequestMapping("/api/vitals")
-@CrossOrigin
+@RequestMapping("/api/vital/vitals")
 public class VitalController {
 
     private final VitalProcessingService processingService;
@@ -20,8 +19,7 @@ public class VitalController {
 
     @PostMapping("/evaluate")
     public VitalAssessment evaluateVitals(
-            @Valid @RequestBody VitalReading reading
-    ) {
+            @Valid @RequestBody VitalReading reading) {
         return processingService.process(reading);
     }
 }
