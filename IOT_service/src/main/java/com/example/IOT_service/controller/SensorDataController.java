@@ -13,7 +13,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sensordata")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
 public class SensorDataController {

@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/availability")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class DoctorAvailabilityController {
 
     private final DoctorAvailabilityService service;
