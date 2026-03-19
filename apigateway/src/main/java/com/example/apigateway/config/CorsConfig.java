@@ -13,14 +13,10 @@ import java.util.List;
 public class CorsConfig {
 
     /**
-     * Expose a CorsConfigurationSource bean instead of CorsWebFilter.
-     *
-     * Spring Cloud Gateway's built-in CORS support picks this up automatically,
-     * and Spring Security (when cors() is enabled) uses the same source —
-     * so the Access-Control-Allow-Origin header is written exactly once.
-     *
-     * DO NOT also register a CorsWebFilter bean; that would add a second
-     * CORS filter and produce duplicate headers, which browsers reject.
+     * Single CorsConfigurationSource bean — consumed by the gateway's built-in
+     * CORS handling AND by Spring Security (wired in SecurityConfig).
+     * This ensures Access-Control-Allow-Origin is written EXACTLY ONCE.
+     * Never register a CorsWebFilter alongside this; that produces duplicate headers.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

@@ -21,9 +21,8 @@ public class SecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                // Wire our CorsConfigurationSource so Security handles CORS once,
-                // instead of disabling it and letting the downstream service's
-                // header bleed through (which caused the duplicate-header error).
+                // Wire our CorsConfigurationSource — Security strips downstream CORS headers
+                // and re-writes the correct one ONCE. Never use .cors(disable) here.
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeExchange(exchanges -> exchanges
                         .anyExchange().permitAll()
