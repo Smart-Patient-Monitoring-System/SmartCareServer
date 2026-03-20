@@ -366,6 +366,7 @@ public class AuthService {
                 .allergies(signupRequest.getCurrentAllergies())
                 .currentMedications(signupRequest.getCurrentMedications())
                 .pastSurgeries(signupRequest.getPastSurgeries())
+                .chronicConditions(signupRequest.getChronicConditions())
                 .build();
 
         patient = patientRepo.save(patient);
