@@ -100,6 +100,7 @@ public class PatientService {
                 .allergies(p.getAllergies())
                 .currentMedications(p.getCurrentMedications())
                 .pastSurgeries(p.getPastSurgeries())
+                .chronicConditions(p.getChronicConditions())
                 .emergencyNotes(p.getEmergencyNotes())
                 .build()).toList();
     }
@@ -167,6 +168,8 @@ public class PatientService {
             p.setCurrentMedications(dto.getCurrentMedications());
         if (dto.getPastSurgeries() != null)
             p.setPastSurgeries(dto.getPastSurgeries());
+        if (dto.getChronicConditions() != null)
+            p.setChronicConditions(dto.getChronicConditions());
         if (dto.getEmergencyNotes() != null)
             p.setEmergencyNotes(dto.getEmergencyNotes());
 
@@ -203,6 +206,7 @@ public class PatientService {
         dto.setAllergies(patient.getAllergies());
         dto.setCurrentMedications(patient.getCurrentMedications());
         dto.setPastSurgeries(patient.getPastSurgeries());
+        dto.setChronicConditions(patient.getChronicConditions());
         dto.setEmergencyNotes(patient.getEmergencyNotes());
         return dto;
     }

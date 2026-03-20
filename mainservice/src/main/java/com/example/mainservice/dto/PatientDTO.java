@@ -48,6 +48,7 @@ public class PatientDTO {
     private String allergies;
     private String currentMedications;
     private String pastSurgeries;
+    private String chronicConditions;
     private String emergencyNotes;
 
 }

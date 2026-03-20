@@ -57,6 +57,7 @@ public class SignupRequest {
     private String currentAllergies;
     private String currentMedications;
     private String pastSurgeries;
+    private String chronicConditions;
 
     @NotBlank(message = "Role is required")
     private String role; // PATIENT, DOCTOR, NURSE, ADMIN
