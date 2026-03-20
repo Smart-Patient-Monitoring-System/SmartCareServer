@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -254,5 +255,43 @@ public class PatientService {
     public Patient getPatientByUsername(String username) {
         return patientrepo.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
+    }
+
+    public Patient update(Long id, PatientDTO patient) {
+        Patient existing = patientrepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        existing.setName(patient.getName());
+
+        if (patient.getDateOfBirth() != null && !patient.getDateOfBirth().clone()) {
+            existing.setDateOfBirth(LocalDate.parse(patient.getDateOfBirth()));
+        }
+
+        existing.setAddress(patient.getAddress());
+        existing.setEmail(patient.getEmail());
+        existing.setNicNo(patient.getNicNo());
+        existing.setGender(patient.getGender());
+        existing.setContactNo(patient.getContactNo());
+        existing.setGuardiansName(patient.getGuardiansName());
+        existing.setGuardiansContactNo(patient.getGuardiansContactNo());
+        existing.setUsername(patient.getUsername());
+
+        if (patient.getPassword() != null && !patient.getPassword().isBlank()) {
+            existing.setPassword(passwordEncoder.encode(patient.getPassword()));
+        }
+
+        existing.setBloodType(patient.getBloodType());
+        existing.setCity(patient.getCity());
+        existing.setDistrict(patient.getDistrict());
+        existing.setPostalCode(patient.getDispostalCodet());
+        existing.setGuardianRelationship(patient.getGuardianRelationship());
+        existing.setGuardianEmail(patient.getGuardianEmail());
+        existing.setMedicalConditions(patient.getMedicalConditions());
+        existing.setAllergies(patient.getAllergies());
+        existing.setCurrentMedications(patient.getCurrentMedications());
+        existing.setPastSurgeries(patient.getPastSurgeries());
+        existing.setEmergencyNotes(patient.getEmergencyNotes());
+
+        return patientrepo.save(existing);
     }
 }
