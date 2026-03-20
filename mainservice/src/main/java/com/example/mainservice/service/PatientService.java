@@ -21,6 +21,7 @@ public class PatientService {
     private final PasswordEncoder passwordEncoder;
     private final EmergencyContactRepository emergencyContactRepository;
     private final LocationService locationService;
+    private final IotDeviceAssignmentService iotDeviceAssignmentService;
 
     public Patient create(PatientDTO patient) {
 
@@ -68,6 +69,13 @@ public class PatientService {
 
         // Auto-create emergency contact from guardian info
         createEmergencyContactFromGuardian(savedPatient);
+        if (patient.getDeviceId() != null && !patient.getDeviceId().isBlank()) {
+            try {
+                iotDeviceAssignmentService.assignDevice(patient.getDeviceId(), savedPatient.getId());
+            } catch (Exception e) {
+                System.err.println("Device assignment failed: " + e.getMessage());
+            }
+        }
 
         return savedPatient;
 

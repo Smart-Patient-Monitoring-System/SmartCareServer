@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface DeviceRepository extends JpaRepository<Device, Long> {
     Optional<Device> findByDeviceIdAndDeviceTokenAndStatus(String deviceId, String deviceToken, String status);
+    Optional<Device> findByDeviceId(String deviceId);
 }

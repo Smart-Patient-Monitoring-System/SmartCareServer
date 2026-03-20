@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.IOT_service.dto.DeviceAssignmentRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -79,5 +80,22 @@ public class SensorDataController {
                 "status", "healthy",
                 "timestamp", LocalDateTime.now()
         ));
+    }
+
+    @PostMapping("/devices/assign")
+    public ResponseEntity<?> assignDevice(@RequestBody DeviceAssignmentRequest request) {
+        Device device = deviceService.assignDeviceToUser(request.getDeviceId(), request.getUserId());
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Device assigned successfully",
+                "deviceId", device.getDeviceId(),
+                "userId", device.getUserId()
+        ));
+    }
+
+    @GetMapping("/devices")
+    public ResponseEntity<?> getAllDevices() {
+        return ResponseEntity.ok(deviceService.getAllDevices());
     }
 }

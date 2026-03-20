@@ -50,4 +50,6 @@ public class PatientDTO {
     private String pastSurgeries;
     private String emergencyNotes;
 
+    private String deviceId;
+
 }
