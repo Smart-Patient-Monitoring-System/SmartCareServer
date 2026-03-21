@@ -28,11 +28,13 @@ spring:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
       routes:
         - id: iot-service
-          uri: lb://iot-service
+          order: -10
+          uri: lb://IOT_service
           predicates:
-            - Path=/api/iot/**
+            - Path=/api/sensordata/**
           filters:
             - StripPrefix=0
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
         - id: chatbotbackend
           uri: lb://chatbotbackend
@@ -49,13 +51,17 @@ spring:
             - StripPrefix=0
 
         - id: mainservice
+          order: 10
           uri: lb://mainservice
           predicates:
             - Path=/api/**
           filters:
             - StripPrefix=0
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
 eureka:
+  instance:
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}

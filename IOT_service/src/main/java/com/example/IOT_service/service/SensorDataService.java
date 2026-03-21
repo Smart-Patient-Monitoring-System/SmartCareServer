@@ -4,8 +4,7 @@ import com.example.IOT_service.model.SensorData;
 import com.example.IOT_service.repository.SensorDataRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -15,38 +14,17 @@ public class SensorDataService {
 
     private final SensorDataRepository repository;
 
-    @Transactional
-    public SensorData saveSensorData(SensorData data) {
+    public SensorData save(SensorData data) {
         return repository.save(data);
     }
 
-    public List<SensorData> getAllData() {
-        return repository.findAllByOrderByReceivedAtDesc();
+    // Only return this patient's data
+    public List<SensorData> getLatestForUser(Long userId, int limit) {
+        return repository.findLatestForUser(userId, limit);
     }
 
-    public List<SensorData> getLatestData(int limit) {
-        return repository.findLatestN(limit);
-    }
-
-    public Optional<SensorData> getLatestReading() {
-        return repository.findTopByOrderByReceivedAtDesc();
-    }
-
-    public List<SensorData> getDataInRange(LocalDateTime start, LocalDateTime end) {
-        return repository.findByReceivedAtBetweenOrderByReceivedAtDesc(start, end);
-    }
-
-    public List<SensorData> getRecentData(int hours) {
-        LocalDateTime since = LocalDateTime.now().minusHours(hours);
-        return repository.findRecentData(since);
-    }
-
-    @Transactional
-    public void deleteOldData(int daysToKeep) {
-        LocalDateTime cutoff = LocalDateTime.now().minusDays(daysToKeep);
-        List<SensorData> oldData = repository.findByReceivedAtBetweenOrderByReceivedAtDesc(
-                LocalDateTime.MIN, cutoff
-        );
-        repository.deleteAll(oldData);
+    // Return this patient's latest saved reading only
+    public Optional<SensorData> getLatestOne(Long userId) {
+        return repository.findTopByUserIdOrderByReceivedAtDesc(userId);
     }
 }

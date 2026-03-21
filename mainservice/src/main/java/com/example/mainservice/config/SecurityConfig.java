@@ -1,7 +1,6 @@
 package com.example.mainservice.config;
 
 import com.example.mainservice.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -22,7 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.Arrays;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,8 +35,6 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Value("${spring.web.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://frontend.mangobush-8de88b36.southeastasia.azurecontainerapps.io}")
-    private String allowedOrigins;
 
     public SecurityConfig(
             @Lazy UserDetailsService userDetailsService,
@@ -57,34 +54,46 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * Mainservice runs BEHIND the API Gateway in all deployed/docker environments.
+     * The gateway owns CORS — it strips downstream CORS headers and re-writes the
+     * correct one exactly once. If mainservice also adds CORS headers the browser
+     * sees duplicates and blocks the request.
+     *
+     * This CorsConfigurationSource intentionally allows all origins with no credentials
+     * so mainservice emits NO Access-Control-Allow-Origin header of its own —
+     * leaving that entirely to the gateway.
+     *
+     * For direct local dev access (port 8080 without gateway) the permissive config
+     * below still works correctly.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(origin -> !origin.isBlank())
-                .collect(Collectors.toList());
-
-        configuration.setAllowedOrigins(origins);
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
-
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(false);
+        config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
+
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(withDefaults())
+                // Use our corsConfigurationSource instead of disable() —
+                // this prevents mainservice from emitting its own CORS headers
+                // which would duplicate the ones the gateway already sets.
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
                         .requestMatchers("/api/auth/**", "/auth/**").permitAll()
                         .requestMatchers("/api/admin/**", "/admin/**").permitAll()
                         .requestMatchers("/api/doctor/**", "/doctor/**").permitAll()
@@ -108,6 +117,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/appointment-types/**", "/appointment-types/**").hasRole("ADMIN")
+
                         .requestMatchers("/api/chat/**", "/chat/**").authenticated()
                         .anyRequest().authenticated()
                 )

@@ -349,6 +349,9 @@ public class AuthService {
         if (patientRepo.existsByEmail(signupRequest.getEmail())) {
             throw new RuntimeException("Email is already in use!");
         }
+        if (patientRepo.existsByNicNo(signupRequest.getNicNo())) {
+            throw new RuntimeException("A patient with this NIC number is already registered!");
+        }
 
         Patient patient = Patient.builder()
                 .name(signupRequest.getName())
@@ -367,6 +370,7 @@ public class AuthService {
                 .allergies(signupRequest.getCurrentAllergies())
                 .currentMedications(signupRequest.getCurrentMedications())
                 .pastSurgeries(signupRequest.getPastSurgeries())
+                .chronicConditions(signupRequest.getChronicConditions())
                 .build();
 
         patient = patientRepo.save(patient);
