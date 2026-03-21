@@ -1,126 +1,101 @@
 package com.example.IOT_service.controller;
 
+import com.example.IOT_service.model.Device;
 import com.example.IOT_service.model.SensorData;
+import com.example.IOT_service.service.DeviceService;
 import com.example.IOT_service.service.SensorDataService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.IOT_service.dto.DeviceAssignmentRequest;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sensordata")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
 public class SensorDataController {
 
-    private final SensorDataService service;
+    private final SensorDataService sensorDataService;
+    private final DeviceService deviceService;
 
-    // POST endpoint - receives data from ESP32
+    // Device upload endpoint for hosted use
+    @PostMapping("/device/upload")
+    public ResponseEntity<?> receiveFromDevice(
+            @RequestHeader("X-Device-Id") String deviceId,
+            @RequestHeader("X-Device-Token") String deviceToken,
+            @RequestBody SensorData data) {
+
+        log.info("Incoming device upload: deviceId={} bpm={} spo2={}", deviceId, data.getBpm(), data.getSpo2());
+
+        Device device = deviceService.validateDevice(deviceId, deviceToken);
+
+        data.setUserId(device.getUserId());
+        data.setDeviceId(device.getDeviceId());
+
+        SensorData saved = sensorDataService.save(data);
+
+        log.info("Saved: id={} userId={} deviceId={} bpm={} spo2={}",
+                saved.getId(),
+                saved.getUserId(),
+                saved.getDeviceId(),
+                saved.getBpm(),
+                saved.getSpo2());
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "id", saved.getId(),
+                "userId", saved.getUserId(),
+                "deviceId", saved.getDeviceId()
+        ));
+    }
+
+    // Optional localhost test endpoint - keep only during testing
     @PostMapping
-    public ResponseEntity<?> receiveSensorData(@RequestBody SensorData data) {
-        try {
-            log.info("Received sensor data: RoomTemp={}, Humidity={}, WaterTemp={}, BPM={}, AvgBPM={}, SpO2={}",
-                    data.getRoomTemp(), data.getHumidity(), data.getWaterTempC(),
-                    data.getBpm(), data.getAvgBpm(), data.getSpo2());
-
-            SensorData saved = service.saveSensorData(data);
-
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Data saved successfully",
-                    "id", saved.getId(),
-                    "timestamp", saved.getReceivedAt()
-            ));
-
-        } catch (Exception e) {
-            log.error("Error saving sensor data", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "success", false,
-                            "message", "Error: " + e.getMessage()
-                    ));
-        }
+    public ResponseEntity<?> receiveLocalTest(@RequestBody SensorData data) {
+        SensorData saved = sensorDataService.save(data);
+        return ResponseEntity.ok(Map.of("success", true, "id", saved.getId()));
     }
 
-    // GET all data
-    @GetMapping
-    public ResponseEntity<List<SensorData>> getAllData() {
-        return ResponseEntity.ok(service.getAllData());
+    @GetMapping("/patient/{userId}/latest/{limit}")
+    public ResponseEntity<List<SensorData>> getLatest(@PathVariable Long userId,
+                                                      @PathVariable int limit) {
+        return ResponseEntity.ok(sensorDataService.getLatestForUser(userId, limit));
     }
 
-    // GET latest N records
-    @GetMapping("/latest/{limit}")
-    public ResponseEntity<List<SensorData>> getLatestData(@PathVariable int limit) {
-        return ResponseEntity.ok(service.getLatestData(limit));
+    @GetMapping("/patient/{userId}/current")
+    public ResponseEntity<?> getCurrent(@PathVariable Long userId) {
+        return sensorDataService.getLatestOne(userId)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElse(ResponseEntity.ok(Map.of("message", "No data yet")));
     }
 
-    // GET most recent single reading
-    @GetMapping("/current")
-    public ResponseEntity<?> getCurrentReading() {
-        return service.getLatestReading()
-                .map(data -> ResponseEntity.ok((Object) data))
-                .orElse(ResponseEntity.ok(Map.of("message", "No data available")));
-    }
-
-    // GET data from last N hours
-    @GetMapping("/recent/{hours}")
-    public ResponseEntity<List<SensorData>> getRecentData(@PathVariable int hours) {
-        return ResponseEntity.ok(service.getRecentData(hours));
-    }
-
-    // DELETE old data
-    @DeleteMapping("/cleanup/{days}")
-    public ResponseEntity<?> cleanupOldData(@PathVariable int days) {
-        try {
-            service.deleteOldData(days);
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Deleted data older than " + days + " days"
-            ));
-        } catch (Exception e) {
-            log.error("Error cleaning up data", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("success", false, "message", e.getMessage()));
-        }
-    }
-
-    // Health check
     @GetMapping("/health")
-    public ResponseEntity<?> healthCheck() {
+    public ResponseEntity<?> health() {
         return ResponseEntity.ok(Map.of(
                 "status", "healthy",
-                "timestamp", LocalDateTime.now(),
-                "service", "Sensor Data API"
+                "timestamp", LocalDateTime.now()
         ));
     }
 
-    @GetMapping("/latest/{limit}/with-status")
-    public ResponseEntity<?> getLatestWithStatus(@PathVariable int limit) {
-        List<SensorData> data = service.getLatestData(limit);
-        if (data.isEmpty()) {
-            return ResponseEntity.ok(Map.of(
-                    "data", List.of(),
-                    "stale", true,
-                    "ageSeconds", null,
-                    "latestTimestamp", null
-            ));
-        }
-
-        SensorData latest = data.get(0); // because repository returns DESC
-        long ageSeconds = java.time.Duration.between(latest.getReceivedAt(), LocalDateTime.now()).getSeconds();
-        boolean stale = ageSeconds > 30; // choose threshold
+    @PostMapping("/devices/assign")
+    public ResponseEntity<?> assignDevice(@RequestBody DeviceAssignmentRequest request) {
+        Device device = deviceService.assignDeviceToUser(request.getDeviceId(), request.getUserId());
 
         return ResponseEntity.ok(Map.of(
-                "data", data,
-                "latestTimestamp", latest.getReceivedAt(),
-                "ageSeconds", ageSeconds,
-                "stale", stale
+                "success", true,
+                "message", "Device assigned successfully",
+                "deviceId", device.getDeviceId(),
+                "userId", device.getUserId()
         ));
     }
 
+    @GetMapping("/devices")
+    public ResponseEntity<?> getAllDevices() {
+        return ResponseEntity.ok(deviceService.getAllDevices());
+    }
 }

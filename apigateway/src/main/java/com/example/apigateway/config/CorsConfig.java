@@ -3,7 +3,7 @@ package com.example.apigateway.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
@@ -12,8 +12,14 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
+    /**
+     * Single CorsConfigurationSource bean — consumed by the gateway's built-in
+     * CORS handling AND by Spring Security (wired in SecurityConfig).
+     * This ensures Access-Control-Allow-Origin is written EXACTLY ONCE.
+     * Never register a CorsWebFilter alongside this; that produces duplicate headers.
+     */
     @Bean
-    public CorsWebFilter corsWebFilter() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
@@ -27,7 +33,6 @@ public class CorsConfig {
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-
-        return new CorsWebFilter(source);
+        return source;
     }
 }

@@ -9,11 +9,13 @@ spring:
     gateway:
       routes:
         - id: iot-service
-          uri: lb://iot-service
+          order: -10
+          uri: http://iot-service:8082
           predicates:
-            - Path=/api/iot/**
+            - Path=/api/sensordata/**
           filters:
             - StripPrefix=0
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
         - id: chatbotbackend
           uri: lb://chatbotbackend
@@ -30,11 +32,13 @@ spring:
             - StripPrefix=0
 
         - id: mainservice
+          order: 10
           uri: lb://mainservice
           predicates:
             - Path=/api/**
           filters:
             - StripPrefix=0
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
 eureka:
   client:

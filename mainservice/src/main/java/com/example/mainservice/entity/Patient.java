@@ -53,6 +53,9 @@ public class Patient {
     @Column(nullable = false)
     private String bloodType;
 
+    @Column(name = "device_id", unique = true)
+    private String deviceId;
+
     // Emergency panel fields
     @Column
     private String city;

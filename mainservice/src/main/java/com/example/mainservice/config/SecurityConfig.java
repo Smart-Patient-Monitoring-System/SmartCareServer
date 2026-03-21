@@ -1,7 +1,6 @@
 package com.example.mainservice.config;
 
 import com.example.mainservice.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -18,6 +17,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import java.util.List;
 
 @Configuration
@@ -27,9 +30,6 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-//    @Value("${spring.web.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://frontend.mangobush-8de88b36.southeastasia.azurecontainerapps.io}")
-//    private String allowedOrigins;
 
     public SecurityConfig(
             @Lazy UserDetailsService userDetailsService,
@@ -49,18 +49,45 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * Mainservice runs BEHIND the API Gateway in all deployed/docker environments.
+     * The gateway owns CORS — it strips downstream CORS headers and re-writes the
+     * correct one exactly once. If mainservice also adds CORS headers the browser
+     * sees duplicates and blocks the request.
+     *
+     * This CorsConfigurationSource intentionally allows all origins with no credentials
+     * so mainservice emits NO Access-Control-Allow-Origin header of its own —
+     * leaving that entirely to the gateway.
+     *
+     * For direct local dev access (port 8080 without gateway) the permissive config
+     * below still works correctly.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(false);
+        config.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
+                // Use our corsConfigurationSource instead of disable() —
+                // this prevents mainservice from emitting its own CORS headers
+                // which would duplicate the ones the gateway already sets.
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        // OPTIONS always allowed (CORS preflight)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // PUBLIC - both /api/xxx and /xxx (after gateway StripPrefix=1 removes /api)
                         .requestMatchers("/api/auth/**", "/auth/**").permitAll()
                         .requestMatchers("/api/admin/**", "/admin/**").permitAll()
                         .requestMatchers("/api/doctor/**", "/doctor/**").permitAll()
@@ -70,22 +97,18 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
 
-                        // Public GET endpoints
                         .requestMatchers(HttpMethod.GET, "/api/doctors/**", "/doctors/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/appointment-types/**", "/appointment-types/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/availability/doctor/**", "/availability/doctor/**").permitAll()
 
-                        // PATIENT
                         .requestMatchers(HttpMethod.POST, "/api/appointments/book", "/appointments/book").hasAnyRole("PATIENT", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/appointments/user/**", "/appointments/user/**").hasAnyRole("PATIENT", "ADMIN")
 
-                        // ADMIN ONLY
                         .requestMatchers(HttpMethod.POST, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/appointment-types/**", "/appointment-types/**").hasRole("ADMIN")
 
-                        // Chat - authenticated
                         .requestMatchers("/api/chat/**", "/chat/**").authenticated()
 
                         .anyRequest().authenticated()

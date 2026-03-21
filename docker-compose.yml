@@ -19,6 +19,8 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     ports:
       - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
       interval: 10s
@@ -34,6 +36,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -92,6 +96,8 @@ services:
         condition: service_healthy
       discoveryserver:
         condition: service_healthy
+      mainservice:
+        condition: service_started
     env_file:
       - .env
     environment:
@@ -100,6 +106,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
       SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      AUTH_SERVICE_URL: http://mainservice:8080
 
   chatbotbackend:
     build:
@@ -137,6 +144,10 @@ services:
     depends_on:
       discoveryserver:
         condition: service_healthy
+      mainservice:
+        condition: service_started
+      iot-service:
+        condition: service_started
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
 
@@ -156,3 +167,7 @@ services:
       - "3001:3000"
     depends_on:
       - prometheus
+
+volumes:
+  postgres_data:
+  mysql_data:

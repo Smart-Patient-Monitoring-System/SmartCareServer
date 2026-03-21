@@ -51,4 +51,6 @@ public class PatientDTO {
     private String chronicConditions;
     private String emergencyNotes;
 
+    private String deviceId;
+
 }

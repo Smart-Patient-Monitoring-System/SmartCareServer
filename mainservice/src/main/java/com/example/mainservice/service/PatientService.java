@@ -21,6 +21,7 @@ public class PatientService {
     private final PasswordEncoder passwordEncoder;
     private final EmergencyContactRepository emergencyContactRepository;
     private final LocationService locationService;
+    private final IotDeviceAssignmentService iotDeviceAssignmentService;
 
     public Patient create(PatientDTO patient) {
 
@@ -49,6 +50,7 @@ public class PatientService {
                 .username(patient.getUsername())
                 .password(passwordEncoder.encode(patient.getPassword()))
                 .bloodType(patient.getBloodType())
+                .deviceId(patient.getDeviceId())
 
                 // NEW: Emergency fields
                 .city(patient.getCity())
@@ -68,6 +70,13 @@ public class PatientService {
 
         // Auto-create emergency contact from guardian info
         createEmergencyContactFromGuardian(savedPatient);
+        if (patient.getDeviceId() != null && !patient.getDeviceId().isBlank()) {
+            try {
+                iotDeviceAssignmentService.assignDevice(patient.getDeviceId(), savedPatient.getId());
+            } catch (Exception e) {
+                System.err.println("Device assignment failed: " + e.getMessage());
+            }
+        }
 
         return savedPatient;
 
@@ -88,6 +97,7 @@ public class PatientService {
                 .bloodType(p.getBloodType())
                 .password(p.getPassword())
                 .username(p.getUsername())
+                .deviceId(p.getDeviceId())
                 // NEW: Emergency fields
                 .city(p.getCity())
                 .district(p.getDistrict())
@@ -109,6 +119,7 @@ public class PatientService {
 
         patientrepo.deleteById(Id);
     }
+
 
     @Transactional
     public PatientDTO updatePatient(Long Id, PatientDTO dto) {
@@ -174,8 +185,16 @@ public class PatientService {
             p.setEmergencyNotes(dto.getEmergencyNotes());
 
         Patient updatedPatient = patientrepo.save(p);
-        return convertToDTO(updatedPatient);
 
+        if (dto.getDeviceId() != null && !dto.getDeviceId().isBlank()) {
+            try {
+                iotDeviceAssignmentService.assignDevice(dto.getDeviceId(), updatedPatient.getId());
+            } catch (Exception e) {
+                System.err.println("Device reassignment failed: " + e.getMessage());
+            }
+        }
+
+        return convertToDTO(updatedPatient);
     }
 
     private PatientDTO convertToDTO(Patient patient) {
@@ -193,8 +212,8 @@ public class PatientService {
         dto.setBloodType(patient.getBloodType());
         dto.setPassword(patient.getPassword());
         dto.setUsername(patient.getUsername());
+        dto.setDeviceId(patient.getDeviceId());
 
-        // NEW: Emergency fields
         dto.setCity(patient.getCity());
         dto.setDistrict(patient.getDistrict());
         dto.setPostalCode(patient.getPostalCode());

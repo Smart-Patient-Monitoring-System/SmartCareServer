@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,6 +17,12 @@ public class SensorData {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "user_id")
+    private Long userId;
+
+    @Column(name = "device_id")
+    private String deviceId;
 
     @Column(name = "room_temp")
     private Double roomTemp;
@@ -46,6 +53,8 @@ public class SensorData {
 
     @PrePersist
     protected void onCreate() {
-        receivedAt = LocalDateTime.now();
+        if (receivedAt == null) {
+            receivedAt = LocalDateTime.now();
+        }
     }
 }
