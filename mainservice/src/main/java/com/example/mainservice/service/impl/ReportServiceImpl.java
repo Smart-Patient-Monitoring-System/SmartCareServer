@@ -28,7 +28,7 @@ public class ReportServiceImpl implements ReportService {
     private final PatientRepo patientRepo;
     private final OcrExtractionService ocrService;
 
-    public ReportServiceImpl(MedicalReportRepository reportRepository, PatientRepo patientRepo,OcrExtractionService ocrService) {
+    public ReportServiceImpl(MedicalReportRepository reportRepository, PatientRepo patientRepo, OcrExtractionService ocrService) {
         this.reportRepository = reportRepository;
         this.patientRepo = patientRepo;
         this.ocrService = ocrService;
@@ -38,7 +38,6 @@ public class ReportServiceImpl implements ReportService {
     public List<MedicalReport> getReportEntitiesByPatient(Long patientId) {
         return reportRepository.findByPatient_IdOrderByUploadedAtDesc(patientId);
     }
-
 
     @Override
     public void uploadReport(Long patientId, String reportName, MultipartFile file) {
@@ -75,7 +74,6 @@ public class ReportServiceImpl implements ReportService {
             }
             reportRepository.save(report);
             logger.info("Saved report id={} for patientId={}", report.getId(), patientId);
-
         } catch (IOException e) {
             logger.error("Failed to save file", e);
             throw new RuntimeException("Failed to save file: " + e.getMessage(), e);
@@ -87,7 +85,16 @@ public class ReportServiceImpl implements ReportService {
         if (patientId == null) throw new IllegalArgumentException("patientId is required");
         return reportRepository.findByPatient_IdOrderByUploadedAtDesc(patientId)
                 .stream()
-                .map(r -> new ReportResponseDTO(r.getId(), r.getReportName(), r.getUploadedAt()))
+                .map(r -> new ReportResponseDTO(r.getId(), r.getReportName(), r.getUploadedAt(), r.getPatient().getId(), r.getPatient().getName()))
+                .toList();
+    }
+
+    @Override
+    public List<ReportResponseDTO> getDoctorPatientsReports(Long doctorId) {
+        if (doctorId == null) throw new IllegalArgumentException("doctorId is required");
+        return reportRepository.findByPatient_AssignedDoctorIdOrderByUploadedAtDesc(doctorId)
+                .stream()
+                .map(r -> new ReportResponseDTO(r.getId(), r.getReportName(), r.getUploadedAt(), r.getPatient().getId(), r.getPatient().getName()))
                 .toList();
     }
 

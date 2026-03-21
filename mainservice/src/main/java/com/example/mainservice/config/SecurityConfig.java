@@ -79,9 +79,6 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                // Use our corsConfigurationSource instead of disable() —
-                // this prevents mainservice from emitting its own CORS headers
-                // which would duplicate the ones the gateway already sets.
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
@@ -91,6 +88,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/auth/**").permitAll()
                         .requestMatchers("/api/admin/**", "/admin/**").permitAll()
                         .requestMatchers("/api/doctor/**", "/doctor/**").permitAll()
+                        .requestMatchers("/api/doctor-notes/**", "/doctor-notes/**").permitAll()
+                        .requestMatchers("/api/patient/**", "/patient/**").permitAll()
+                        .requestMatchers("/api/pendingdoctor/**", "/pendingdoctor/**").permitAll()
+                        .requestMatchers("/api/dashboard/**", "/dashboard/**").permitAll()
+                        .requestMatchers("/api/vital/**", "/vital/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/payments/pay/**", "/payments/pay/**").permitAll()
                         .requestMatchers("/api/payments/notify", "/payments/notify").permitAll()
                         .requestMatchers("/ws/**", "/ws").permitAll()
