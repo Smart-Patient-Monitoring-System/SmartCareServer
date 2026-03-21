@@ -50,17 +50,8 @@ public class SecurityConfig {
     }
 
     /**
-     * Mainservice runs BEHIND the API Gateway in all deployed/docker environments.
-     * The gateway owns CORS — it strips downstream CORS headers and re-writes the
-     * correct one exactly once. If mainservice also adds CORS headers the browser
-     * sees duplicates and blocks the request.
-     *
-     * This CorsConfigurationSource intentionally allows all origins with no credentials
-     * so mainservice emits NO Access-Control-Allow-Origin header of its own —
-     * leaving that entirely to the gateway.
-     *
-     * For direct local dev access (port 8080 without gateway) the permissive config
-     * below still works correctly.
+     * Mainservice runs BEHIND the API Gateway. The gateway owns CORS.
+     * Permissive config here prevents duplicate CORS headers.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -81,36 +72,74 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // ── Auth ──────────────────────────────────────────────────
                         .requestMatchers("/api/auth/**", "/auth/**").permitAll()
+
+                        // ── Admin ─────────────────────────────────────────────────
                         .requestMatchers("/api/admin/**", "/admin/**").permitAll()
+
+                        // ── Doctor portal (general doctors) ───────────────────────
                         .requestMatchers("/api/doctor/**", "/doctor/**").permitAll()
                         .requestMatchers("/api/doctor-notes/**", "/doctor-notes/**").permitAll()
+
+                        // ── Patient ───────────────────────────────────────────────
                         .requestMatchers("/api/patient/**", "/patient/**").permitAll()
+
+                        // ── Pending doctors ───────────────────────────────────────
                         .requestMatchers("/api/pendingdoctor/**", "/pendingdoctor/**").permitAll()
+
+                        // ── Dashboard ─────────────────────────────────────────────
                         .requestMatchers("/api/dashboard/**", "/dashboard/**").permitAll()
+
+                        // ── Vitals / ECG ──────────────────────────────────────────
                         .requestMatchers("/api/vital/**", "/vital/**").permitAll()
+
+                        // ── Payments ──────────────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/payments/pay/**", "/payments/pay/**").permitAll()
                         .requestMatchers("/api/payments/notify", "/payments/notify").permitAll()
+
+                        // ── WebSocket ─────────────────────────────────────────────
                         .requestMatchers("/ws/**", "/ws").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
 
+                        // ── SpecialDoctors (booking doctors) ──────────────────────
+                        // GET - public (patient browsing doctors)
                         .requestMatchers(HttpMethod.GET, "/api/doctors/**", "/doctors/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/appointment-types/**", "/appointment-types/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/availability/doctor/**", "/availability/doctor/**").permitAll()
-
-                        .requestMatchers(HttpMethod.POST, "/api/appointments/book", "/appointments/book").hasAnyRole("PATIENT", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/appointments/user/**", "/appointments/user/**").hasAnyRole("PATIENT", "ADMIN")
-
+                        // CRUD - admin only
                         .requestMatchers(HttpMethod.POST, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
+
+                        // ── Appointment types ─────────────────────────────────────
+                        .requestMatchers(HttpMethod.GET, "/api/appointment-types/**", "/appointment-types/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/appointment-types/**", "/appointment-types/**").hasRole("ADMIN")
 
+                        // ── Availability ──────────────────────────────────────────
+                        // GET slots - public (patient browsing)
+                        .requestMatchers(HttpMethod.GET, "/api/availability/**", "/availability/**").permitAll()
+                        // ADD/UPDATE/DELETE slots - special doctors manage their own
+                        .requestMatchers(HttpMethod.POST, "/api/availability/**", "/availability/**").hasAnyRole("ADMIN", "SPECIAL_DOCTOR", "DOCTOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/availability/**", "/availability/**").hasAnyRole("ADMIN", "SPECIAL_DOCTOR", "DOCTOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/availability/**", "/availability/**").hasAnyRole("ADMIN", "SPECIAL_DOCTOR", "DOCTOR")
+
+                        // ── Appointments (booking flow) ───────────────────────────
+                        // Book - patient or admin
+                        .requestMatchers(HttpMethod.POST, "/api/appointments/book", "/appointments/book").hasAnyRole("PATIENT", "ADMIN")
+                        // View own - patient or admin
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/user/**", "/appointments/user/**").hasAnyRole("PATIENT", "ADMIN")
+                        // Admin all appointments
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/admin/**", "/appointments/admin/**").hasRole("ADMIN")
+                        // Doctor appointments
+                        .requestMatchers(HttpMethod.GET, "/api/doctor/appointments/**", "/doctor/appointments/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/doctor/appointments/**", "/doctor/appointments/**").permitAll()
+                        // Admin appointments management
+                        .requestMatchers("/api/admin/appointments/**", "/admin/appointments/**").permitAll()
+
+                        // ── Chat ──────────────────────────────────────────────────
                         .requestMatchers("/api/chat/**", "/chat/**").authenticated()
 
                         .anyRequest().authenticated()

@@ -38,16 +38,20 @@ public class Appointment {
     /* ================= BASIC DETAILS ================= */
 
     private LocalDate bookingDate;
-
     private LocalTime bookingTime;
-
     private String reason;
-
     private String physicalLocation;
-
     private String onlineLink;
 
+    /** Display name of patient (from JWT display name at booking time) */
     private String patientName;
+
+    /**
+     * Patient's DB ID — stored at booking time so we can query per-patient appointments.
+     * Nullable for backward compatibility with old records.
+     */
+    @Column(name = "patient_id")
+    private Long patientId;
 
     /* ================= PAYMENT ================= */
 
@@ -57,7 +61,7 @@ public class Appointment {
     @Enumerated(EnumType.STRING)
     private AppointmentStatus appointmentStatus;
 
-    // PayHere order_id (STRING — very important)
+    /** PayHere order_id — must be unique */
     @Column(unique = true)
     private String orderId;
 }

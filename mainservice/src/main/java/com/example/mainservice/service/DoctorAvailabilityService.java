@@ -21,22 +21,24 @@ public class DoctorAvailabilityService {
     private final DoctorAvailabilityRepository repository;
     private final SpecialDoctorRepository doctorRepository;
 
-    // ✅ GET available slots (return entities, not DTOs)
+    /** Get available (not booked) slots for a doctor on a specific date */
     public List<DoctorAvailability> getAvailableSlots(Long doctorId, LocalDate date) {
         return repository.findBySpecialDoctorIdAndAvailableDateAndIsBookedFalse(doctorId, date);
     }
 
-    // ADD multiple slots
+    /** Get ALL slots for a doctor (including booked) — for doctor's own schedule view */
+    public List<DoctorAvailability> getAllSlots(Long doctorId) {
+        return repository.findBySpecialDoctorId(doctorId);
+    }
+
+    /** Add multiple availability slots for a doctor on a specific date */
     public void addAvailability(SaveAvailabilityRequest request) {
         SpecialDoctor doctor = doctorRepository.findById(request.getDoctorId())
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+                .orElseThrow(() -> new RuntimeException("Doctor not found with ID: " + request.getDoctorId()));
 
         List<DoctorAvailability> slots = request.getTimes().stream()
                 .filter(time -> !repository.existsBySpecialDoctorIdAndAvailableDateAndAvailableTime(
-                        request.getDoctorId(),
-                        request.getDate(),
-                        time
-                ))
+                        request.getDoctorId(), request.getDate(), time))
                 .map(time -> DoctorAvailability.builder()
                         .specialDoctor(doctor)
                         .availableDate(request.getDate())
@@ -48,41 +50,37 @@ public class DoctorAvailabilityService {
         repository.saveAll(slots);
     }
 
-    // UPDATE single slot
+    /** Update a slot's date and/or time */
     public void updateSlot(Long slotId, DoctorAvailabilityDTO dto) {
         DoctorAvailability slot = repository.findById(slotId)
-                .orElseThrow(() -> new RuntimeException("Slot not found"));
-
+                .orElseThrow(() -> new RuntimeException("Slot not found with ID: " + slotId));
         slot.setAvailableDate(dto.getAvailableDate());
         slot.setAvailableTime(dto.getAvailableTime());
-
         repository.save(slot);
     }
 
-    // DELETE single slot
+    /** Delete a slot */
     public void deleteSlot(Long slotId) {
         repository.deleteById(slotId);
     }
 
-    // MARK SLOT AS BOOKED (transactional to prevent double booking)
+    /** Mark slot as booked — called when payment succeeds */
     @Transactional
     public DoctorAvailability markSlotBooked(Long slotId) {
         DoctorAvailability slot = repository.findById(slotId)
                 .orElseThrow(() -> new RuntimeException("Slot not found"));
-
         if (slot.getIsBooked()) {
             throw new RuntimeException("Slot already booked");
         }
-
         slot.setIsBooked(true);
         return repository.save(slot);
     }
 
+    /** Mark slot as available again — called when payment fails or appointment cancelled */
     @Transactional
     public DoctorAvailability markSlotAvailable(Long slotId) {
         DoctorAvailability slot = repository.findById(slotId)
                 .orElseThrow(() -> new RuntimeException("Slot not found"));
-
         slot.setIsBooked(false);
         return repository.save(slot);
     }
