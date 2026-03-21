@@ -1,5 +1,6 @@
 package com.example.mainservice.service;
 
+import com.example.mainservice.dto.DoctorAssignmentItemDTO;
 import com.example.mainservice.entity.Doctor;
 import com.example.mainservice.entity.Patient;
 import com.example.mainservice.repository.DoctorRepo;
@@ -44,6 +45,48 @@ public class DoctorAssignmentService {
 
         log.info("Assigned patient to Doctor: {} (ID: {})", assignedDoctor.getName(), assignedDoctor.getId());
         return assignedDoctor.getId();
+    }
+
+
+    @Transactional
+    public void assignDoctorToPatient(Long doctorId, Long patientId) {
+        Doctor doctor = doctorRepo.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        Patient patient = patientRepo.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        patient.setAssignedDoctorId(doctor.getId());
+        patientRepo.save(patient);
+
+        log.info("Admin assigned Doctor {} (ID: {}) to Patient {} (ID: {})",
+                doctor.getName(), doctor.getId(), patient.getName(), patient.getId());
+    }
+
+    @Transactional
+    public void unassignDoctorFromPatient(Long patientId) {
+        Patient patient = patientRepo.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+        patient.setAssignedDoctorId(null);
+        patientRepo.save(patient);
+
+        log.info("Admin unassigned doctor from Patient {} (ID: {})", patient.getName(), patient.getId());
+    }
+
+    public List<DoctorAssignmentItemDTO> getAllAssignments() {
+        return patientRepo.findAll().stream()
+                .filter(patient -> patient.getAssignedDoctorId() != null)
+                .map(patient -> {
+                    Doctor doctor = doctorRepo.findById(patient.getAssignedDoctorId()).orElse(null);
+                    return DoctorAssignmentItemDTO.builder()
+                            .patientId(patient.getId())
+                            .patientName(patient.getName())
+                            .patientEmail(patient.getEmail())
+                            .doctorId(patient.getAssignedDoctorId())
+                            .doctorName(doctor != null ? doctor.getName() : "Unknown")
+                            .doctorEmail(doctor != null ? doctor.getEmail() : null)
+                            .build();
+                })
+                .toList();
     }
 
     public long getPatientCountForDoctor(Long doctorId) {
