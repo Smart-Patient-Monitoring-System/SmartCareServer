@@ -188,29 +188,6 @@ public class PatientService {
         }
 
         return convertToDTO(updatedPatient);
-        if (dto.getEmail() != null) p.setEmail(dto.getEmail());
-        if (dto.getNicNo() != null) p.setNicNo(dto.getNicNo());
-        if (dto.getGender() != null) p.setGender(dto.getGender());
-        if (dto.getContactNo() != null) p.setContactNo(dto.getContactNo());
-        if (dto.getGuardiansName() != null) p.setGuardiansName(dto.getGuardiansName());
-        if (dto.getGuardiansContactNo() != null) p.setGuardiansContactNo(dto.getGuardiansContactNo());
-        if (dto.getBloodType() != null) p.setBloodType(dto.getBloodType());
-        if (dto.getPassword() != null) p.setPassword(dto.getPassword());
-        if (dto.getUsername() != null) p.setUsername(dto.getUsername());
-        if (dto.getCity() != null) p.setCity(dto.getCity());
-        if (dto.getDistrict() != null) p.setDistrict(dto.getDistrict());
-        if (dto.getPostalCode() != null) p.setPostalCode(dto.getPostalCode());
-        if (dto.getLatitude() != null) p.setLatitude(dto.getLatitude());
-        if (dto.getLongitude() != null) p.setLongitude(dto.getLongitude());
-        if (dto.getGuardianRelationship() != null) p.setGuardianRelationship(dto.getGuardianRelationship());
-        if (dto.getGuardianEmail() != null) p.setGuardianEmail(dto.getGuardianEmail());
-        if (dto.getMedicalConditions() != null) p.setMedicalConditions(dto.getMedicalConditions());
-        if (dto.getAllergies() != null) p.setAllergies(dto.getAllergies());
-        if (dto.getCurrentMedications() != null) p.setCurrentMedications(dto.getCurrentMedications());
-        if (dto.getPastSurgeries() != null) p.setPastSurgeries(dto.getPastSurgeries());
-        if (dto.getEmergencyNotes() != null) p.setEmergencyNotes(dto.getEmergencyNotes());
-
-        return convertToDTO(patientrepo.save(p));
     }
 
     private PatientDTO convertToDTO(Patient patient) {

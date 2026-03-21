@@ -10,7 +10,7 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 40s
 
   mysql:
     image: mysql:8.0
@@ -70,6 +70,7 @@ services:
       dockerfile: mainservice/Dockerfile
     ports:
       - "8080:8080"
+    restart: on-failure
     depends_on:
       mysql:
         condition: service_healthy
@@ -82,7 +83,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
       SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
 
   iot-service:
@@ -91,13 +92,12 @@ services:
       dockerfile: IOT_service/Dockerfile
     ports:
       - "8082:8082"
+    restart: on-failure
     depends_on:
       postgres:
         condition: service_healthy
       discoveryserver:
         condition: service_healthy
-      mainservice:
-        condition: service_started
     env_file:
       - .env
     environment:
@@ -114,6 +114,7 @@ services:
       dockerfile: chatbotbackend/Dockerfile
     ports:
       - "8081:8081"
+    restart: on-failure
     depends_on:
       discoveryserver:
         condition: service_healthy
@@ -129,11 +130,13 @@ services:
       dockerfile: vitalReports-AI/Dockerfile
     ports:
       - "8083:8083"
+    restart: on-failure
     depends_on:
       discoveryserver:
         condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
+      SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
 
   apigateway:
     build:
@@ -141,13 +144,10 @@ services:
       dockerfile: apigateway/Dockerfile
     ports:
       - "8088:8088"
+    restart: on-failure
     depends_on:
       discoveryserver:
         condition: service_healthy
-      mainservice:
-        condition: service_started
-      iot-service:
-        condition: service_started
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
 
@@ -158,7 +158,6 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
-      - apigateway
       - mainservice
 
   grafana:

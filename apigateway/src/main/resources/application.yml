@@ -4,28 +4,17 @@ server:
 spring:
   application:
     name: apigateway
+  main:
+    web-application-type: reactive
 
   cloud:
     gateway:
-      globalcors:
-        corsConfigurations:
-          '[/**]':
-            allowedOriginPatterns:
-              - "http://localhost:5173"
-              - "http://localhost:3000"
-              - "https://*.azurecontainerapps.io"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-              - PATCH
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 3600
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
       default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
       routes:
         - id: iot-service
           order: -10
@@ -37,6 +26,7 @@ spring:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
         - id: chatbotbackend
+          order: 1
           uri: lb://chatbotbackend
           predicates:
             - Path=/api/bot/**
@@ -44,6 +34,7 @@ spring:
             - StripPrefix=0
 
         - id: vitalreports
+          order: 2
           uri: lb://vitalreports
           predicates:
             - Path=/api/reports/**
@@ -51,7 +42,7 @@ spring:
             - StripPrefix=0
 
         - id: mainservice
-          order: 10
+          order: 100
           uri: lb://mainservice
           predicates:
             - Path=/api/**
@@ -63,14 +54,14 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://discoveryserver:8761/eureka}
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,prometheus
-logging:
-  level:
-    org.springframework.cloud.gateway: TRACE
-    reactor.netty.http.client: DEBUG
-    org.springframework.web.reactive: DEBUG
