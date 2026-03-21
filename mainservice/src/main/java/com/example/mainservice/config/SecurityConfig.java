@@ -22,9 +22,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
@@ -52,19 +49,6 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * Mainservice runs BEHIND the API Gateway in all deployed/docker environments.
-     * The gateway owns CORS — it strips downstream CORS headers and re-writes the
-     * correct one exactly once. If mainservice also adds CORS headers the browser
-     * sees duplicates and blocks the request.
-     *
-     * This CorsConfigurationSource intentionally allows all origins with no credentials
-     * so mainservice emits NO Access-Control-Allow-Origin header of its own —
-     * leaving that entirely to the gateway.
-     *
-     * For direct local dev access (port 8080 without gateway) the permissive config
-     * below still works correctly.
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -79,32 +63,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(origin -> !origin.isBlank())
-                .collect(Collectors.toList());
-
-        configuration.setAllowedOrigins(origins);
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                // Use our corsConfigurationSource instead of disable() —
-                // this prevents mainservice from emitting its own CORS headers
-                // which would duplicate the ones the gateway already sets.
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -113,6 +74,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**", "/admin/**").permitAll()
                         .requestMatchers("/api/doctor/**", "/doctor/**").permitAll()
                         .requestMatchers("/api/patient/**", "/patient/**").permitAll()
+                        .requestMatchers("/api/doctor-assignments/**", "/doctor-assignments/**").permitAll()
                         .requestMatchers("/api/pendingdoctor/**", "/pendingdoctor/**").permitAll()
                         .requestMatchers("/api/dashboard/**", "/dashboard/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/payments/pay/**", "/payments/pay/**").permitAll()

@@ -1,14 +1,16 @@
 server:
-  port: 8761
+  port: 8083
 
 spring:
   application:
-    name: discoveryserver
+    name: vitalreports
 
 eureka:
   client:
-    register-with-eureka: false
-    fetch-registry: false
+    service-url:
+      defaultZone: http://discoveryserver:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
 
 management:
   endpoints:

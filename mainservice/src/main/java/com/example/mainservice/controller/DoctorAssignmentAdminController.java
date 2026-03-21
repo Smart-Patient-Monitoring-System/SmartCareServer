@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/admin/doctor-assignments")
+@RequestMapping("/api/doctor-assignments")
 @RequiredArgsConstructor
 public class DoctorAssignmentAdminController {
 
