@@ -1,5 +1,6 @@
 package com.example.mainservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SignupRequest {
     @NotBlank(message = "Username is required")
     private String username;
@@ -57,6 +59,7 @@ public class SignupRequest {
     private String currentAllergies;
     private String currentMedications;
     private String pastSurgeries;
+    private String chronicConditions;
 
     @NotBlank(message = "Role is required")
     private String role; // PATIENT, DOCTOR, NURSE, ADMIN

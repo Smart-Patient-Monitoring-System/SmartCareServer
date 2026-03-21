@@ -90,6 +90,9 @@ public class Patient {
     @Column(length = 1000)
     private String pastSurgeries;
 
+    @Column(name = "chronic_conditions", length = 1000)
+    private String chronicConditions;
+
     @Column(name = "emergency_notes", length = 1000)
     private String emergencyNotes;
 
