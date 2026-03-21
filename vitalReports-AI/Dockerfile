@@ -15,11 +15,12 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 # Install Python3 + pip + required packages for ECG ML prediction
+# Note: --break-system-packages is required on Ubuntu 24 (Noble) due to PEP 668
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-numpy \
-    && pip3 install --no-cache-dir tensorflow wfdb scipy \
+    && pip3 install --no-cache-dir --break-system-packages tensorflow wfdb scipy \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create symlink so 'python' resolves to python3
