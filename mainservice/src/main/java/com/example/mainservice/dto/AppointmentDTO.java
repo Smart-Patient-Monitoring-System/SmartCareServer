@@ -21,4 +21,5 @@ public class AppointmentDTO {
     private String reason;
     private String paymentStatus;
     private String appointmentStatus;
+    private String patientName;
 }

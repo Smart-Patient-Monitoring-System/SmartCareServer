@@ -49,6 +49,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final EmailService emailService;
+    private final DoctorAssignmentService doctorAssignmentService;
 
     public AuthResponse login(LoginRequest loginRequest) {
         // Validate role is provided
@@ -373,6 +374,7 @@ public class AuthService {
                 .build();
 
         patient = patientRepo.save(patient);
+        doctorAssignmentService.rebalancePatientsRoundRobin();
 
         CustomUserDetails userDetails = new CustomUserDetails(
                 patient.getId(),

@@ -18,7 +18,7 @@ public class AIVitalEvaluator implements VitalDecisionEngine {
                 HealthStatus.AVERAGE,
                 HealthStatus.AVERAGE,
                 HealthStatus.AVERAGE,
-                HealthStatus.AVERAGE
-        );
+                HealthStatus.AVERAGE,
+                HealthStatus.AVERAGE);
     }
 }
