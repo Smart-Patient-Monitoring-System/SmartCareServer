@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.example.mainservice.repository.PatientRepo;
+import com.example.mainservice.entity.Patient;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,9 +27,11 @@ public class VitalSignsController {
 
     private static final Logger logger = LoggerFactory.getLogger(VitalSignsController.class);
     private final VitalSignsService service;
+    private final PatientRepo patientRepo;
 
-    public VitalSignsController(VitalSignsService service) {
+    public VitalSignsController(VitalSignsService service, PatientRepo patientRepo) {
         this.service = service;
+        this.patientRepo = patientRepo;
     }
 
     /**
@@ -38,9 +43,10 @@ public class VitalSignsController {
         logger.info("Received vital signs submission");
 
         try {
-            // TODO: Get actual patient ID from authentication context/JWT token
-            // For now using hardcoded value
-            Long patientId = 1L;
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            Patient patient = patientRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Patient record not found for email: " + email));
+            Long patientId = patient.getId();
 
             VitalSigns saved = service.saveVitalSigns(dto, patientId);
 

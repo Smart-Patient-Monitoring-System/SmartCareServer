@@ -21,10 +21,4 @@ public class AdminDashboardDTO {
     public long getPatientCount() {
         return patientCount;
     }
-
-    public long getPendingDoctorCount() {
-        return pendingdoctorCount;
-    }
-
-
 }

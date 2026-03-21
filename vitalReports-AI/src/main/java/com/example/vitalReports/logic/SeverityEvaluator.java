@@ -35,10 +35,16 @@ public class SeverityEvaluator {
     private int count(VitalStatus status, HealthStatus target) {
         int count = 0;
 
-        if (status.getSpo2Status() == target) count++;
-        if (status.getPressureStatus() == target) count++;
-        if (status.getHeartRateStatus() == target) count++;
-        if (status.getTemperatureStatus() == target) count++;
+        if (status.getSpo2Status() == target)
+            count++;
+        if (status.getPressureStatus() == target)
+            count++;
+        if (status.getHeartRateStatus() == target)
+            count++;
+        if (status.getTemperatureStatus() == target)
+            count++;
+        if (status.getBloodSugarStatus() == target)
+            count++;
 
         return count;
     }

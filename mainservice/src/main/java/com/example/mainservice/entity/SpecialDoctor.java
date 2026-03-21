@@ -41,7 +41,7 @@ public class SpecialDoctor {
     private String email;
 
 
-    //one doctor have many available date and time
-    @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL)
+    //one SpecialDoctor have many available date and time
+    @OneToMany(mappedBy = "specialDoctor", cascade = CascadeType.ALL)
     private List<DoctorAvailability> availabilities;
 }

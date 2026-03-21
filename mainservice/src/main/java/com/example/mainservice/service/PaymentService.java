@@ -31,8 +31,12 @@ public class PaymentService {
     @Value("${payhere.notifyUrl}")
     private String notifyUrl;
 
+    @Value("${payhere.checkoutUrl:https://sandbox.payhere.lk/pay/checkout}")
+    private String checkoutUrl;
+
     private final AppointmentRepository appointmentRepository;
     private final PaymentRepository paymentRepository;
+    private final DoctorAvailabilityService doctorAvailabilityService;
 
     /* ======================================================
        IPN SUPPORT METHODS (UNCHANGED)
@@ -67,13 +71,13 @@ public class PaymentService {
         if (amount <= 0) amount = 500.00;
 
         /* -----------------------------------------
-           1️⃣ CREATE PAYMENT FIRST
+           1️⃣ CREATE PAYMENT - SET TO SUCCESS DIRECTLY
            ----------------------------------------- */
         Payment payment = Payment.builder()
                 .appointment(appointment)
                 .amount(amount)
-                .paymentGateway("PAYHERE")
-                .paymentStatus(PaymentStatus.PENDING)
+                .paymentGateway("PAYHERE_BYPASS")
+                .paymentStatus(PaymentStatus.SUCCESS)
                 .build();
         paymentRepository.save(payment);
 
@@ -83,60 +87,40 @@ public class PaymentService {
         String orderId = "ORDER_" + appointment.getId() + "_" + System.currentTimeMillis();
 
         /* -----------------------------------------
-           3️⃣ SAVE ORDER ID INTO BOTH TABLES
+           3️⃣ SAVE ORDER ID INTO BOTH TABLES & MARK SUCCESS
            ----------------------------------------- */
         payment.setOrderId(orderId);
         paymentRepository.save(payment);
 
         appointment.setOrderId(orderId);
-        appointment.setPaymentStatus(PaymentStatus.PENDING);
+        appointment.setPaymentStatus(PaymentStatus.SUCCESS);
         appointmentRepository.save(appointment);
 
         /* -----------------------------------------
-           4️⃣ PAYHERE FORM DATA
+           4️⃣ MARK SLOT AS BOOKED
            ----------------------------------------- */
-        String currency = "LKR";
-        String amountFormatted = String.format("%.2f", amount);
-        String hash = generateMd5Hash(merchantId, orderId, amountFormatted, currency);
+        if (appointment.getAvailability() != null) {
+            doctorAvailabilityService.markSlotBooked(appointment.getAvailability().getId());
+        }
 
+        /* -----------------------------------------
+           5️⃣ REDIRECT TO FRONTEND SUCCESS PAGE
+           ----------------------------------------- */
         return """
                 <!DOCTYPE html>
                 <html>
                 <head>
                     <meta charset="UTF-8">
-                    <title>Redirecting to PayHere</title>
+                    <title>Redirecting to Success</title>
                 </head>
-                <body onload="document.forms[0].submit()">
-                    <form method="post" action="https://sandbox.payhere.lk/pay/checkout">
-                        <input type="hidden" name="merchant_id" value="%s"/>
-                        <input type="hidden" name="return_url" value="%s"/>
-                        <input type="hidden" name="cancel_url" value="%s"/>
-                        <input type="hidden" name="notify_url" value="%s"/>
-                        <input type="hidden" name="order_id" value="%s"/>
-                        <input type="hidden" name="items" value="Doctor Appointment"/>
-                        <input type="hidden" name="currency" value="%s"/>
-                        <input type="hidden" name="amount" value="%s"/>
-                        <input type="hidden" name="hash" value="%s"/>
-                        <input type="hidden" name="first_name" value="Patient"/>
-                        <input type="hidden" name="last_name" value="User"/>
-                        <input type="hidden" name="email" value="test@test.com"/>
-                        <input type="hidden" name="phone" value="0770000000"/>
-                        <input type="hidden" name="address" value="Colombo"/>
-                        <input type="hidden" name="city" value="Colombo"/>
-                        <input type="hidden" name="country" value="Sri Lanka"/>
-                    </form>
+                <body>
+                    <h2>Payment confirmed. Redirecting...</h2>
+                    <script>
+                        window.location.href = "http://localhost:5173/#/payment-success";
+                    </script>
                 </body>
                 </html>
-                """.formatted(
-                merchantId,
-                returnUrl,
-                cancelUrl,
-                notifyUrl,
-                orderId,
-                currency,
-                amountFormatted,
-                hash
-        );
+                """;
     }
 
     /* ======================================================

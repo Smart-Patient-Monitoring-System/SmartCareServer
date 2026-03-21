@@ -20,9 +20,15 @@ public class DoctorAvailability {
 
     private LocalTime availableTime;
 
+    // FK to Doctor entity (used by Doctor.availabilities)
     @ManyToOne
     @JoinColumn(name = "doctor_id")
-    private SpecialDoctor doctor;
+    private Doctor doctor;
+
+    // FK to SpecialDoctor entity (used by SpecialDoctor.availabilities)
+    @ManyToOne
+    @JoinColumn(name = "special_doctor_id")
+    private SpecialDoctor specialDoctor;
 
     @Column(name = "is_booked", nullable = false)
     private Boolean isBooked = false;  // ensures default false

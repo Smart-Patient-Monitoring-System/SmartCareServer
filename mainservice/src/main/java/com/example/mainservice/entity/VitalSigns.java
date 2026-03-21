@@ -40,6 +40,8 @@ public class VitalSigns {
     // Weight
     private Double weight;
 
+    private String room;
+
     // Date and Time
     private LocalDateTime measurementDateTime;
 
@@ -52,6 +54,13 @@ public class VitalSigns {
 
     // Metadata
     private LocalDateTime createdAt;
+
+    private String triageLevel;
+    private String spo2Status;
+    private String pressureStatus;
+    private String heartRateStatus;
+    private String temperatureStatus;
+    private String bloodSugarStatus;
 
     @PrePersist
     protected void onCreate() {

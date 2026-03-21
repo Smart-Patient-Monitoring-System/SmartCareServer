@@ -9,10 +9,16 @@ import java.util.List;
 
 public interface DoctorAvailabilityRepository extends JpaRepository<DoctorAvailability, Long> {
 
-    List<DoctorAvailability> findByDoctorIdAndAvailableDateAndIsBookedFalse(
+    List<DoctorAvailability> findBySpecialDoctorIdAndAvailableDateAndIsBookedFalse(
             Long doctorId,
             LocalDate date
     );
 
-    List<DoctorAvailability> findByDoctorId(Long doctorId);
+    List<DoctorAvailability> findBySpecialDoctorId(Long doctorId);
+
+    boolean existsBySpecialDoctorIdAndAvailableDateAndAvailableTime(
+            Long doctorId,
+            LocalDate availableDate,
+            java.time.LocalTime availableTime
+    );
 }
