@@ -11,6 +11,7 @@ public class AppointmentDTO {
 
     private Long appointmentId;
     private Long availabilityId;
+    private Long doctorId;          // <-- add this
     private String doctorName;
     private String specialty;
     private Double consultationFee;

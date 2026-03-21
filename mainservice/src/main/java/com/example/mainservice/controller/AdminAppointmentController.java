@@ -9,7 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/appointments")
@@ -19,23 +22,21 @@ public class AdminAppointmentController {
 
     private final AppointmentRepository appointmentRepository;
 
-    // 🔹 GET ALL APPOINTMENTS
+    /* ================= GET ALL PAID APPOINTMENTS ================= */
     @GetMapping
     public List<AppointmentDTO> getAllAppointments() {
 
-        //  ONLY SUCCESS PAYMENTS
-        List<Appointment> list =
+        List<Appointment> appointments =
                 appointmentRepository.findByPaymentStatus(PaymentStatus.SUCCESS);
 
-        System.out.println("PAID APPOINTMENTS = " + list.size());
-
-        return list.stream().map(a -> new AppointmentDTO(
+        return appointments.stream().map(a -> new AppointmentDTO(
                 a.getId(),
                 a.getAvailability() != null ? a.getAvailability().getId() : null,
+                a.getDoctor() != null ? a.getDoctor().getId() : null,
                 a.getDoctor() != null ? a.getDoctor().getName() : "N/A",
                 a.getDoctor() != null ? a.getDoctor().getSpecialty() : "N/A",
                 a.getDoctor() != null ? a.getDoctor().getConsultationFee() : 0.0,
-                a.getAppointmentType().getTypeName(),
+                a.getAppointmentType() != null ? a.getAppointmentType().getTypeName() : "N/A",
                 a.getPhysicalLocation() != null ? a.getPhysicalLocation() : a.getOnlineLink(),
                 a.getBookingDate(),
                 a.getBookingTime(),
@@ -45,7 +46,7 @@ public class AdminAppointmentController {
         )).toList();
     }
 
-    // 🔹 CONFIRM APPOINTMENT
+    /* ================= CONFIRM APPOINTMENT ================= */
     @PostMapping("/confirm/{id}")
     public ResponseEntity<String> confirmAppointment(
             @PathVariable Long id,
@@ -53,18 +54,59 @@ public class AdminAppointmentController {
             @RequestParam(required = false) String zoomLink
     ) {
 
-        Appointment a = appointmentRepository.findById(id)
+        Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
 
-        if ("Physical".equalsIgnoreCase(a.getAppointmentType().getTypeName())) {
-            a.setPhysicalLocation(physicalLocation);
+        if (appointment.getAppointmentType() != null &&
+                "Physical".equalsIgnoreCase(appointment.getAppointmentType().getTypeName())) {
+
+            appointment.setPhysicalLocation(physicalLocation);
+
         } else {
-            a.setOnlineLink(zoomLink);
+
+            appointment.setOnlineLink(zoomLink);
         }
 
-        a.setAppointmentStatus(AppointmentStatus.CONFIRMED);
-        appointmentRepository.save(a);
+        appointment.setAppointmentStatus(AppointmentStatus.CONFIRMED);
 
-        return ResponseEntity.ok("Confirmed");
+        appointmentRepository.save(appointment);
+
+        return ResponseEntity.ok("Appointment confirmed successfully");
     }
+
+    /* ================= UPDATE APPOINTMENT DATE & TIME ================= */
+    @PutMapping("/update-date/{id}")
+    public ResponseEntity<String> updateAppointmentDate(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body
+    ) {
+
+        Appointment appointment = appointmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+
+        String bookingDate = body.get("bookingDate");
+        String bookingTime = body.get("bookingTime");
+
+        try {
+
+            if (bookingDate != null && !bookingDate.isBlank()) {
+                LocalDate newDate = LocalDate.parse(bookingDate);
+                appointment.setBookingDate(newDate);
+            }
+
+            if (bookingTime != null && !bookingTime.isBlank()) {
+                // Convert String to LocalTime to match entity
+                LocalTime newTime = LocalTime.parse(bookingTime);
+                appointment.setBookingTime(newTime);
+            }
+
+            appointmentRepository.save(appointment);
+
+            return ResponseEntity.ok("Appointment date/time updated successfully");
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Invalid date or time format");
+        }
+    }
+
 }

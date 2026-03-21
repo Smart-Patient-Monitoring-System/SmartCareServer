@@ -35,27 +35,24 @@ public class Appointment {
     @JoinColumn(name = "appointment_type_id")
     private AppointmentType appointmentType;
 
+    @ManyToOne
+    @JoinColumn(name = "patient_id", nullable = false)
+    private Patient patient; // link to the logged-in user
+
     /* ================= BASIC DETAILS ================= */
-
     private LocalDate bookingDate;
-
     private LocalTime bookingTime;
-
     private String reason;
-
     private String physicalLocation;
-
     private String onlineLink;
 
     /* ================= PAYMENT ================= */
-
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;
 
     @Enumerated(EnumType.STRING)
     private AppointmentStatus appointmentStatus;
 
-    // PayHere order_id (STRING — very important)
     @Column(unique = true)
     private String orderId;
 }
