@@ -22,6 +22,7 @@ public class PatientService {
     private final EmergencyContactRepository emergencyContactRepository;
     private final LocationService locationService;
     private final IotDeviceAssignmentService iotDeviceAssignmentService;
+    private final DoctorAssignmentService doctorAssignmentService;
 
     public Patient create(PatientDTO patient) {
 
@@ -66,6 +67,7 @@ public class PatientService {
                 .pastSurgeries(patient.getPastSurgeries())
                 .emergencyNotes(patient.getEmergencyNotes())
                 .build();
+        p.setAssignedDoctorId(doctorAssignmentService.assignDoctor());
         Patient savedPatient = patientrepo.save(p);
 
         // Auto-create emergency contact from guardian info

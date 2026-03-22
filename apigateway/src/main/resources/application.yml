@@ -7,15 +7,33 @@ spring:
 
   cloud:
     gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - "http://localhost:5173"
+              - "http://localhost:3000"
+              - "https://*.azurecontainerapps.io"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
       routes:
         - id: iot-service
           order: -10
-          uri: http://iot-service:8082
+          uri: lb://iot-service
           predicates:
-            - Path=/api/sensordata/**
+            - Path=/api/iot/**
           filters:
             - StripPrefix=0
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
         - id: chatbotbackend
           uri: lb://chatbotbackend
@@ -38,7 +56,6 @@ spring:
             - Path=/api/**
           filters:
             - StripPrefix=0
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
 
 eureka:
   client:

@@ -96,6 +96,10 @@ public class Patient {
     @Column(name = "emergency_notes", length = 1000)
     private String emergencyNotes;
 
+    // Doctor portal: which doctor is assigned to this patient
+    @Column(name = "assigned_doctor_id")
+    private Long assignedDoctorId;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

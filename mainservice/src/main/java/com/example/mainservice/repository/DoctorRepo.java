@@ -16,28 +16,16 @@ public interface DoctorRepo extends JpaRepository<Doctor, Long> {
 
     boolean existsByEmail(String email);
 
-    /*
-     * Search doctors by name (case-insensitive, partial match)
-     * Example: "john" will match "Dr. John Smith"
-     */
     List<Doctor> findByNameContainingIgnoreCase(String name);
 
-    /**
-     * Search by doctor registration number (partial match)
-     */
     List<Doctor> findByDoctorRegNoContaining(String doctorRegNo);
 
-    /**
-     * Search by name OR doctor registration number
-     * This provides the best user experience for searching
-     */
-    List<Doctor> findByNameContainingIgnoreCaseOrDoctorRegNoContaining(
-            String name,
-            String doctorRegNo
-    );
+    List<Doctor> findByNameContainingIgnoreCaseOrDoctorRegNoContaining(String name, String doctorRegNo);
 
-    /**
-     * Search by hospital (useful for filtering)
-     */
     List<Doctor> findByHospitalContainingIgnoreCase(String hospital);
+
+    // Doctor assignment: find by position for round-robin assignment
+    List<Doctor> findByPosition(String position);
+
+    List<Doctor> findByPositionContainingIgnoreCase(String position);
 }

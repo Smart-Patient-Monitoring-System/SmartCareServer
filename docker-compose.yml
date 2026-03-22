@@ -84,6 +84,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
       SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      VITALREPORTS_URL: http://vitalreports:8083
 
   iot-service:
     build:
@@ -134,6 +135,8 @@ services:
         condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discoveryserver:8761/eureka
+      ECG_PYTHON_PATH: python
+      ECG_SCRIPT_PATH: ecg_predict.py
 
   apigateway:
     build:

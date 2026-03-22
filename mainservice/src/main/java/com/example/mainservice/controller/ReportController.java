@@ -26,7 +26,6 @@ public class ReportController {
         this.service = service;
     }
 
-    // ✅ React: POST /api/patients/{patientId}/reports/upload
     @PostMapping("/patients/{patientId}/reports/upload")
     public ResponseEntity<?> upload(
             @PathVariable Long patientId,
@@ -43,7 +42,6 @@ public class ReportController {
             response.put("reportName", reportName);
 
             return ResponseEntity.ok(response);
-
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -53,7 +51,6 @@ public class ReportController {
         }
     }
 
-    // ✅ React: GET /api/patients/{patientId}/reports
     @GetMapping("/patients/{patientId}/reports")
     public ResponseEntity<List<ReportResponseDTO>> getPatientReports(@PathVariable Long patientId) {
         try {
@@ -64,7 +61,16 @@ public class ReportController {
         }
     }
 
-    // ✅ React: GET /api/reports/{id}/download
+    @GetMapping("/doctor/{doctorId}/patients/reports")
+    public ResponseEntity<List<ReportResponseDTO>> getDoctorPatientsReports(@PathVariable Long doctorId) {
+        try {
+            return ResponseEntity.ok(service.getDoctorPatientsReports(doctorId));
+        } catch (Exception e) {
+            logger.error("Failed to fetch doctor's patients reports", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @GetMapping("/reports/{id}/download")
     public ResponseEntity<byte[]> downloadReport(@PathVariable Long id) {
         try {
@@ -77,7 +83,6 @@ public class ReportController {
                     .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
                     .header("Content-Type", report.getFileType())
                     .body(data);
-
         } catch (Exception e) {
             logger.error("Download failed", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

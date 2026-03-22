@@ -44,6 +44,9 @@ public class Doctor {
     @Column(nullable = false)
     private String password;
 
+    @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL)
+    private java.util.List<DoctorAvailability> availabilities;
+
     public Doctor() {
 
     }
