@@ -8,156 +8,115 @@ import com.example.mainservice.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
 
-    @Value("${payhere.merchantId}")
+    private final PaymentRepository paymentRepository;
+    private final AppointmentRepository appointmentRepository;
+
+    @Value("${payhere.merchantId:1234667}")
     private String merchantId;
 
-    @Value("${payhere.merchantSecret}")
+    @Value("${payhere.merchantSecret:MTM3MzkzOTM2MzY0NzMwMzU3OTEyOTM0Njg5MjIxMzMxMjY5NjEz}")
     private String merchantSecret;
 
-    @Value("${payhere.returnUrl}")
+    @Value("${payhere.returnUrl:http://localhost:5173/#/payment-success}") // where user goes after success
     private String returnUrl;
 
-    @Value("${payhere.cancelUrl}")
+    @Value("${payhere.cancelUrl:http://localhost:5173/#/payment-cancel}")
     private String cancelUrl;
 
-    @Value("${payhere.notifyUrl}")
+    @Value("${payhere.notifyUrl:http://localhost:8080/api/payments/notify}") // your backend webhook
     private String notifyUrl;
 
-    private final AppointmentRepository appointmentRepository;
-    private final PaymentRepository paymentRepository;
-
-    /* ======================================================
-       IPN SUPPORT METHODS (UNCHANGED)
-       ====================================================== */
-
-    public void updatePaymentStatusFromOrderId(String orderId, PaymentStatus status) {
-        paymentRepository.findByOrderId(orderId).ifPresent(payment -> {
-            payment.setPaymentStatus(status);
-            paymentRepository.save(payment);
-        });
-    }
-
-    public Long getAppointmentIdFromOrderId(String orderId) {
-        return paymentRepository.findByOrderId(orderId)
-                .map(p -> p.getAppointment().getId())
-                .orElse(null);
-    }
-
-    /* ======================================================
-       BUILD PAYMENT FORM (FIXED ORDER_ID LOGIC)
-       ====================================================== */
-
-    public String buildPaymentForm(Long appointmentId, String amountParam) {
-
+    @Transactional
+    public String buildPaymentForm(Long appointmentId, String requestedAmount) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
 
-        double amount = (amountParam != null && !amountParam.isEmpty())
-                ? Double.parseDouble(amountParam)
-                : appointment.getDoctor().getConsultationFee();
+        double amount = 0.0;
+        try {
+            amount = Double.parseDouble(requestedAmount);
+        } catch (Exception e) {
+            amount = 1500.00; // fallback default
+        }
 
-        if (amount <= 0) amount = 500.00;
+        // 1. Generate Order ID
+        String orderId = "ORDER_" + appointment.getId() + "_" + System.currentTimeMillis();
 
-        /* -----------------------------------------
-           1️⃣ CREATE PAYMENT FIRST
-           ----------------------------------------- */
+        // 2. Create Payment record (PENDING)
         Payment payment = Payment.builder()
                 .appointment(appointment)
+                .orderId(orderId)
                 .amount(amount)
                 .paymentGateway("PAYHERE")
                 .paymentStatus(PaymentStatus.PENDING)
+                .paymentDate(LocalDateTime.now())
                 .build();
         paymentRepository.save(payment);
 
-        /* -----------------------------------------
-           2️⃣ GENERATE ORDER ID (USING APPOINTMENT ID)
-           ----------------------------------------- */
-        String orderId = "ORDER_" + appointment.getId() + "_" + System.currentTimeMillis();
-
-        /* -----------------------------------------
-           3️⃣ SAVE ORDER ID INTO BOTH TABLES
-           ----------------------------------------- */
-        payment.setOrderId(orderId);
-        paymentRepository.save(payment);
-
+        // Link back to appointment
         appointment.setOrderId(orderId);
-        appointment.setPaymentStatus(PaymentStatus.PENDING);
         appointmentRepository.save(appointment);
 
-        /* -----------------------------------------
-           4️⃣ PAYHERE FORM DATA
-           ----------------------------------------- */
-        String currency = "LKR";
-        String amountFormatted = String.format("%.2f", amount);
-        String hash = generateMd5Hash(merchantId, orderId, amountFormatted, currency);
+        // Format amount to 2 decimal places using US Locale to prevent comma (,) decimals in regions that use them
+        String formattedAmount = String.format(java.util.Locale.US, "%.2f", amount);
 
-        return """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Redirecting to PayHere</title>
-                </head>
-                <body onload="document.forms[0].submit()">
-                    <form method="post" action="https://sandbox.payhere.lk/pay/checkout">
-                        <input type="hidden" name="merchant_id" value="%s"/>
-                        <input type="hidden" name="return_url" value="%s"/>
-                        <input type="hidden" name="cancel_url" value="%s"/>
-                        <input type="hidden" name="notify_url" value="%s"/>
-                        <input type="hidden" name="order_id" value="%s"/>
-                        <input type="hidden" name="items" value="Doctor Appointment"/>
-                        <input type="hidden" name="currency" value="%s"/>
-                        <input type="hidden" name="amount" value="%s"/>
-                        <input type="hidden" name="hash" value="%s"/>
-                        <input type="hidden" name="first_name" value="Patient"/>
-                        <input type="hidden" name="last_name" value="User"/>
-                        <input type="hidden" name="email" value="test@test.com"/>
-                        <input type="hidden" name="phone" value="0770000000"/>
-                        <input type="hidden" name="address" value="Colombo"/>
-                        <input type="hidden" name="city" value="Colombo"/>
-                        <input type="hidden" name="country" value="Sri Lanka"/>
-                    </form>
-                </body>
-                </html>
-                """.formatted(
-                merchantId,
-                returnUrl,
-                cancelUrl,
-                notifyUrl,
-                orderId,
-                currency,
-                amountFormatted,
-                hash
-        );
+        // 3. Generate MD5 Hash
+        String hash = generateHash(merchantId, orderId, formattedAmount, "LKR", merchantSecret);
+
+        // 4. Return HTML Form that auto-submits to PayHere Sandbox
+        return "<html><body onload='document.forms[0].submit()'>" +
+                "<form method='POST' action='https://sandbox.payhere.lk/pay/checkout'>" +
+                "<input type='hidden' name='merchant_id' value='" + merchantId + "'>" +
+                "<input type='hidden' name='return_url' value='" + returnUrl + "'>" +
+                "<input type='hidden' name='cancel_url' value='" + cancelUrl + "'>" +
+                "<input type='hidden' name='notify_url' value='" + notifyUrl + "'>" +
+
+                "<input type='hidden' name='order_id' value='" + orderId + "'>" +
+                "<input type='hidden' name='items' value='Doctor Appointment #" + appointmentId + "'>" +
+                "<input type='hidden' name='currency' value='LKR'>" +
+                "<input type='hidden' name='amount' value='" + formattedAmount + "'>" +
+
+                "<input type='hidden' name='first_name' value='Patient'>" +
+                "<input type='hidden' name='last_name' value=''>" +
+                "<input type='hidden' name='email' value='patient@example.com'>" +
+                "<input type='hidden' name='phone' value='0771234567'>" +
+                "<input type='hidden' name='address' value='Colombo'>" +
+                "<input type='hidden' name='city' value='Colombo'>" +
+                "<input type='hidden' name='country' value='Sri Lanka'>" +
+
+                "<input type='hidden' name='hash' value='" + hash + "'>" +
+                "</form>" +
+                "<h2>Redirecting to Secure Payment Gateway...</h2>" +
+                "</body></html>";
     }
 
-    /* ======================================================
-       HASHING (UNCHANGED)
-       ====================================================== */
-
-    public String generateMd5Hash(String merchantId, String orderId, String amount, String currency) {
-        String md5Input = merchantId + orderId + amount + currency + md5(merchantSecret);
-        return md5(md5Input);
-    }
-
-    private String md5(String input) {
+    private String generateHash(String merchantId, String orderId, String formattedAmount, String currency, String merchantSecret) {
         try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] digest = md.digest(input.getBytes());
-            BigInteger no = new BigInteger(1, digest);
-            String hash = no.toString(16);
-            while (hash.length() < 32) hash = "0" + hash;
-            return hash.toUpperCase();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            String hashedSecret = getMd5(merchantSecret).toUpperCase();
+            String hashString = merchantId + orderId + formattedAmount + currency + hashedSecret;
+            return getMd5(hashString).toUpperCase();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("MD5 algorithm not found", e);
         }
+    }
+
+    private String getMd5(String input) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        md.update(input.getBytes());
+        byte[] digest = md.digest();
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 }
