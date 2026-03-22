@@ -185,6 +185,8 @@ public class PatientService {
             p.setChronicConditions(dto.getChronicConditions());
         if (dto.getEmergencyNotes() != null)
             p.setEmergencyNotes(dto.getEmergencyNotes());
+        if (dto.getDeviceId() != null)
+            p.setDeviceId(dto.getDeviceId().isBlank() ? null : dto.getDeviceId());
 
         Patient updatedPatient = patientrepo.save(p);
 
