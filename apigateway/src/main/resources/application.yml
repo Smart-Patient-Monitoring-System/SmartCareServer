@@ -29,9 +29,9 @@ spring:
       routes:
         - id: iot-service
           order: -10
-          uri: lb://iot-service
+          uri: http://iot-service:8082
           predicates:
-            - Path=/api/iot/**
+            - Path=/api/sensordata/**
           filters:
             - StripPrefix=0
 
