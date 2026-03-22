@@ -32,5 +32,6 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;
 
+    @Builder.Default
     private LocalDateTime paymentDate = LocalDateTime.now();
 }
