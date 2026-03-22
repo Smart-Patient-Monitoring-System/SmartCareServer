@@ -32,7 +32,16 @@ public class AppointmentController {
 
     @GetMapping("/user/success")
     public ResponseEntity<List<AppointmentDTO>> getSuccessfulAppointments() {
-        return ResponseEntity.ok(appointmentService.getSuccessfulAppointments());
+        System.out.println("=== /api/appointments/user/success HIT by Patient ===");
+        try {
+            List<AppointmentDTO> list = appointmentService.getSuccessfulAppointments();
+            System.out.println("=== Returning " + list.size() + " appointments ===");
+            return ResponseEntity.ok(list);
+        } catch (Exception e) {
+            System.out.println("=== ERROR in getSuccessfulAppointments: " + e.getMessage() + " ===");
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/admin/all")

@@ -103,15 +103,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/appointment-types/**", "/appointment-types/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/availability/doctor/**", "/availability/doctor/**").permitAll()
 
-                        .requestMatchers(HttpMethod.POST, "/api/appointments/book", "/appointments/book").hasAnyRole("PATIENT", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/appointments/user/**", "/appointments/user/**").hasAnyRole("PATIENT", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/appointments/book", "/appointments/book").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/user/**", "/appointments/user/**").permitAll()
 
                         .requestMatchers(HttpMethod.POST, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/appointment-types/**", "/appointment-types/**").hasRole("ADMIN")
 
-                        .requestMatchers("/api/chat/**", "/chat/**").authenticated()
+                        .requestMatchers("/api/chat/**", "/chat/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
