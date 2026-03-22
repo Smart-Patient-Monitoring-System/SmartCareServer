@@ -5,69 +5,82 @@ import com.example.mainservice.entity.Appointment;
 import com.example.mainservice.entity.enums.AppointmentStatus;
 import com.example.mainservice.entity.enums.PaymentStatus;
 import com.example.mainservice.repository.AppointmentRepository;
+import com.example.mainservice.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/appointments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class AdminAppointmentController {
 
     private final AppointmentRepository appointmentRepository;
+    private final AppointmentService appointmentService;
 
-    // 🔹 GET ALL APPOINTMENTS
+    /**
+     * GET /api/admin/appointments
+     * Returns all PAID appointments for admin overview panel.
+     */
     @GetMapping
-    public List<AppointmentDTO> getAllAppointments() {
-
-        //  ONLY SUCCESS PAYMENTS
-        List<Appointment> list =
-                appointmentRepository.findByPaymentStatus(PaymentStatus.SUCCESS);
-
+    public List<AppointmentDTO> getAllPaidAppointments() {
+        List<Appointment> list = appointmentRepository.findByPaymentStatus(PaymentStatus.SUCCESS);
         System.out.println("PAID APPOINTMENTS = " + list.size());
-
-        return list.stream().map(a -> {
-            AppointmentDTO dto = new AppointmentDTO();
-            dto.setAppointmentId(a.getId());
-            dto.setAvailabilityId(a.getAvailability() != null ? a.getAvailability().getId() : null);
-            dto.setDoctorName(a.getDoctor() != null ? a.getDoctor().getName() : "N/A");
-            dto.setSpecialty(a.getDoctor() != null ? a.getDoctor().getSpecialty() : "N/A");
-            dto.setConsultationFee(a.getDoctor() != null ? a.getDoctor().getConsultationFee() : 0.0);
-            dto.setAppointmentType(a.getAppointmentType().getTypeName());
-            dto.setLocationOrLink(a.getPhysicalLocation() != null ? a.getPhysicalLocation() : a.getOnlineLink());
-            dto.setBookingDate(a.getBookingDate());
-            dto.setBookingTime(a.getBookingTime());
-            dto.setReason(a.getReason());
-            dto.setPaymentStatus(a.getPaymentStatus().name());
-            dto.setAppointmentStatus(a.getAppointmentStatus().name());
-            dto.setPatientName(a.getPatientName());
-            return dto;
-        }).toList();
+        return list.stream().map(appointmentService::convertToDTO).toList();
     }
 
-    // 🔹 CONFIRM APPOINTMENT
+    /**
+     * GET /api/admin/appointments/all
+     * Returns ALL appointments regardless of payment status.
+     */
+    @GetMapping("/all")
+    public List<AppointmentDTO> getAllAppointments() {
+        return appointmentService.getAllAppointments();
+    }
+
+    /**
+     * POST /api/admin/appointments/confirm/{id}
+     * Admin confirms appointment and optionally sets location or zoom link.
+     * Frontend redirected here after clicking "Confirm" in admin booking panel.
+     */
     @PostMapping("/confirm/{id}")
     public ResponseEntity<String> confirmAppointment(
             @PathVariable Long id,
             @RequestParam(required = false) String physicalLocation,
             @RequestParam(required = false) String zoomLink
     ) {
-
         Appointment a = appointmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+                .orElseThrow(() -> new RuntimeException("Appointment not found with ID: " + id));
 
         if ("Physical".equalsIgnoreCase(a.getAppointmentType().getTypeName())) {
-            a.setPhysicalLocation(physicalLocation);
+            if (physicalLocation != null && !physicalLocation.isBlank()) {
+                a.setPhysicalLocation(physicalLocation);
+            }
         } else {
-            a.setOnlineLink(zoomLink);
+            if (zoomLink != null && !zoomLink.isBlank()) {
+                a.setOnlineLink(zoomLink);
+            }
         }
 
         a.setAppointmentStatus(AppointmentStatus.CONFIRMED);
         appointmentRepository.save(a);
 
-        return ResponseEntity.ok("Confirmed");
+        return ResponseEntity.ok("Appointment confirmed successfully");
+    }
+
+    /**
+     * POST /api/admin/appointments/cancel/{id}
+     * Admin cancels an appointment.
+     */
+    @PostMapping("/cancel/{id}")
+    public ResponseEntity<String> cancelAppointment(@PathVariable Long id) {
+        Appointment a = appointmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        a.setAppointmentStatus(AppointmentStatus.CANCELLED);
+        appointmentRepository.save(a);
+        return ResponseEntity.ok("Appointment cancelled");
     }
 }

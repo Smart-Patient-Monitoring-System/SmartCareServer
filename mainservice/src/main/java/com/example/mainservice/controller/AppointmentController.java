@@ -18,10 +18,18 @@ public class AppointmentController {
 
     private final AppointmentService appointmentService;
 
+    /**
+     * POST /api/appointments/book
+     * Patient books an appointment. Returns AppointmentDTO with ID so
+     * frontend can redirect to /api/payments/pay/{id}.
+     */
     @PostMapping("/book")
-    public ResponseEntity<?> bookAppointment(@RequestBody AppointmentRequestDTO dto, Principal principal) {
+    public ResponseEntity<?> bookAppointment(
+            @RequestBody AppointmentRequestDTO dto,
+            Principal principal
+    ) {
         try {
-            String patientName = principal != null ? principal.getName() : "Unknown";
+            String patientName = (principal != null) ? principal.getName() : "Unknown";
             return ResponseEntity.ok(appointmentService.bookAppointment(dto, patientName));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -30,11 +38,19 @@ public class AppointmentController {
         }
     }
 
+    /**
+     * GET /api/appointments/user/success
+     * Patient views their confirmed (paid) appointments.
+     */
     @GetMapping("/user/success")
     public ResponseEntity<List<AppointmentDTO>> getSuccessfulAppointments() {
         return ResponseEntity.ok(appointmentService.getSuccessfulAppointments());
     }
 
+    /**
+     * GET /api/appointments/admin/all
+     * Admin views all appointments.
+     */
     @GetMapping("/admin/all")
     public ResponseEntity<List<AppointmentDTO>> getAllAppointments() {
         return ResponseEntity.ok(appointmentService.getAllAppointments());

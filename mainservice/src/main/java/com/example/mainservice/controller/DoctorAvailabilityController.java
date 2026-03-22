@@ -5,54 +5,105 @@ import com.example.mainservice.dto.SaveAvailabilityRequest;
 import com.example.mainservice.entity.DoctorAvailability;
 import com.example.mainservice.service.DoctorAvailabilityService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/availability")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class DoctorAvailabilityController {
 
     private final DoctorAvailabilityService service;
 
-    // ✅ Get available slots for a doctor on a specific date
+    /**
+     * GET /api/availability/doctor/{doctorId}?date=YYYY-MM-DD
+     * Public — patients browse available slots for a doctor on a given date.
+     */
     @GetMapping("/doctor/{doctorId}")
-    public List<DoctorAvailabilityDTO> getAvailableSlots(
+    public ResponseEntity<?> getAvailableSlots(
             @PathVariable Long doctorId,
             @RequestParam("date") String dateStr
     ) {
-        LocalDate date = LocalDate.parse(dateStr);
+        try {
+            LocalDate date = LocalDate.parse(dateStr);
+            List<DoctorAvailability> slots = service.getAvailableSlots(doctorId, date);
+            List<DoctorAvailabilityDTO> dtos = slots.stream()
+                    .map(slot -> new DoctorAvailabilityDTO(
+                            slot.getId(),
+                            slot.getAvailableDate(),
+                            slot.getAvailableTime()
+                    ))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(dtos);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid date format. Use YYYY-MM-DD"));
+        }
+    }
 
-        // Convert entities to DTOs for API response
-        List<DoctorAvailability> slots = service.getAvailableSlots(doctorId, date);
-        return slots.stream()
+    /**
+     * GET /api/availability/doctor/{doctorId}/all
+     * All slots for a doctor (any status) — for doctor portal schedule view.
+     */
+    @GetMapping("/doctor/{doctorId}/all")
+    public ResponseEntity<List<DoctorAvailabilityDTO>> getAllSlots(@PathVariable Long doctorId) {
+        List<DoctorAvailabilityDTO> dtos = service.getAllSlots(doctorId).stream()
                 .map(slot -> new DoctorAvailabilityDTO(
                         slot.getId(),
                         slot.getAvailableDate(),
                         slot.getAvailableTime()
                 ))
                 .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
-    // Add availability
+    /**
+     * POST /api/availability
+     * Admin/doctor adds availability slots.
+     * Body: { "doctorId": 1, "date": "2026-04-10", "times": ["09:00", "10:00"] }
+     */
     @PostMapping
-    public void addAvailability(@RequestBody SaveAvailabilityRequest request) {
-        service.addAvailability(request);
+    public ResponseEntity<?> addAvailability(@RequestBody SaveAvailabilityRequest request) {
+        try {
+            service.addAvailability(request);
+            return ResponseEntity.ok(Map.of("message", "Availability added successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    // Update slot
+    /**
+     * PUT /api/availability/{slotId}
+     * Update a specific slot's date/time.
+     */
     @PutMapping("/{slotId}")
-    public void updateSlot(@PathVariable Long slotId, @RequestBody DoctorAvailabilityDTO dto) {
-        service.updateSlot(slotId, dto);
+    public ResponseEntity<?> updateSlot(
+            @PathVariable Long slotId,
+            @RequestBody DoctorAvailabilityDTO dto
+    ) {
+        try {
+            service.updateSlot(slotId, dto);
+            return ResponseEntity.ok(Map.of("message", "Slot updated"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    // Delete slot
+    /**
+     * DELETE /api/availability/{slotId}
+     * Delete a specific slot.
+     */
     @DeleteMapping("/{slotId}")
-    public void deleteSlot(@PathVariable Long slotId) {
-        service.deleteSlot(slotId);
+    public ResponseEntity<?> deleteSlot(@PathVariable Long slotId) {
+        try {
+            service.deleteSlot(slotId);
+            return ResponseEntity.ok(Map.of("message", "Slot deleted"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

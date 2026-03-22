@@ -8,10 +8,12 @@ import java.util.List;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
-    // Fetch only successful payments
+    /** All appointments with a given payment status */
     List<Appointment> findByPaymentStatus(PaymentStatus paymentStatus);
 
+    /** Doctor's paid appointments (SpecialDoctor FK) */
     List<Appointment> findByDoctorIdAndPaymentStatus(Long doctorId, PaymentStatus paymentStatus);
 
+    /** All of a doctor's appointments regardless of payment */
     List<Appointment> findByDoctorId(Long doctorId);
 }

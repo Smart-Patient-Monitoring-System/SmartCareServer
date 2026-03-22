@@ -27,26 +27,35 @@ public class AppointmentService {
     private final SpecialDoctorRepository doctorRepository;
     private final AppointmentTypeRepository appointmentTypeRepository;
 
+    // ============================
+    // BOOK APPOINTMENT
+    // ============================
     @Transactional
     public AppointmentDTO bookAppointment(AppointmentRequestDTO request, String patientName) {
-        SpecialDoctor doctor = doctorRepository.findById(request.getDoctorId())
-                .orElseThrow(() -> new RuntimeException("Doctor not found"));
 
-        AppointmentType appointmentType = appointmentTypeRepository.findById(request.getAppointmentTypeId())
+        SpecialDoctor doctor = doctorRepository.findById(request.getDoctorId())
+                .orElseThrow(() -> new RuntimeException("Doctor not found with ID: " + request.getDoctorId()));
+
+        AppointmentType appointmentType = appointmentTypeRepository
+                .findById(request.getAppointmentTypeId())
                 .orElseThrow(() -> new RuntimeException("Appointment type not found"));
 
-        DoctorAvailability availableSlot = availabilityService.getAvailableSlots(request.getDoctorId(), request.getBookingDate())
+        DoctorAvailability availableSlot = availabilityService
+                .getAvailableSlots(request.getDoctorId(), request.getBookingDate())
                 .stream()
                 .filter(slot -> slot.getAvailableTime().equals(request.getBookingTime()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Selected time slot not available"));
 
+        // Mark slot as booked immediately to prevent double-booking
+        DoctorAvailability bookedSlot = availabilityService.markSlotBooked(availableSlot.getId());
+
         Appointment appointment = Appointment.builder()
                 .doctor(doctor)
                 .appointmentType(appointmentType)
-                .availability(availableSlot)
-                .bookingDate(availableSlot.getAvailableDate())
-                .bookingTime(availableSlot.getAvailableTime())
+                .availability(bookedSlot)
+                .bookingDate(bookedSlot.getAvailableDate())
+                .bookingTime(bookedSlot.getAvailableTime())
                 .reason(request.getReason())
                 .patientName(patientName)
                 .paymentStatus(PaymentStatus.PENDING)
@@ -56,53 +65,77 @@ public class AppointmentService {
         return convertToDTO(appointmentRepository.save(appointment));
     }
 
+    // ============================
+    // USER → ONLY SUCCESS PAYMENTS
+    // ============================
     public List<AppointmentDTO> getSuccessfulAppointments() {
-        return appointmentRepository.findByPaymentStatus(PaymentStatus.SUCCESS)
+        return appointmentRepository
+                .findByPaymentStatus(PaymentStatus.SUCCESS)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
+    // ============================
+    // ADMIN → ALL APPOINTMENTS
+    // ============================
     public List<AppointmentDTO> getAllAppointments() {
-        return appointmentRepository.findAll().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public List<AppointmentDTO> getDoctorAppointments(Long doctorId) {
-        return appointmentRepository.findByDoctorIdAndPaymentStatus(doctorId, PaymentStatus.SUCCESS)
+        return appointmentRepository.findAll()
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
+    // ============================
+    // DOCTOR → THEIR APPOINTMENTS
+    // ============================
+    public List<AppointmentDTO> getDoctorAppointments(Long doctorId) {
+        return appointmentRepository
+                .findByDoctorIdAndPaymentStatus(doctorId, PaymentStatus.SUCCESS)
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    // ============================
+    // SET ZOOM / MEETING LINK
+    // ============================
     @Transactional
     public AppointmentDTO setMeetingLink(Long appointmentId, String link) {
-        Appointment appointment = appointmentRepository.findById(appointmentId)
+        Appointment a = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        appointment.setOnlineLink(link);
-        return convertToDTO(appointmentRepository.save(appointment));
+        a.setOnlineLink(link);
+        return convertToDTO(appointmentRepository.save(a));
     }
 
+    // ============================
+    // CONFIRM APPOINTMENT
+    // ============================
     @Transactional
     public AppointmentDTO confirmAppointment(Long appointmentId) {
-        Appointment appointment = appointmentRepository.findById(appointmentId)
+        Appointment a = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        appointment.setAppointmentStatus(AppointmentStatus.CONFIRMED);
-        return convertToDTO(appointmentRepository.save(appointment));
+        a.setAppointmentStatus(AppointmentStatus.CONFIRMED);
+        return convertToDTO(appointmentRepository.save(a));
     }
 
+    // ============================
+    // ENTITY → DTO
+    // ============================
     public AppointmentDTO convertToDTO(Appointment appointment) {
-        String locationOrLink = appointment.getAppointmentType().getTypeName().equalsIgnoreCase("Physical")
-                ? appointment.getPhysicalLocation()
-                : appointment.getOnlineLink();
+
+        String locationOrLink =
+                appointment.getAppointmentType().getTypeName().equalsIgnoreCase("Physical")
+                        ? appointment.getPhysicalLocation()
+                        : appointment.getOnlineLink();
 
         AppointmentDTO dto = new AppointmentDTO();
         dto.setAppointmentId(appointment.getId());
-        dto.setAvailabilityId(appointment.getAvailability() != null ? appointment.getAvailability().getId() : null);
-        dto.setDoctorName(appointment.getDoctor().getName());
-        dto.setSpecialty(appointment.getDoctor().getSpecialty());
-        dto.setConsultationFee(appointment.getDoctor().getConsultationFee());
+        dto.setAvailabilityId(appointment.getAvailability() != null
+                ? appointment.getAvailability().getId() : null);
+        dto.setDoctorName(appointment.getDoctor() != null ? appointment.getDoctor().getName() : "N/A");
+        dto.setSpecialty(appointment.getDoctor() != null ? appointment.getDoctor().getSpecialty() : "N/A");
+        dto.setConsultationFee(appointment.getDoctor() != null ? appointment.getDoctor().getConsultationFee() : 1500.0);
         dto.setAppointmentType(appointment.getAppointmentType().getTypeName());
         dto.setLocationOrLink(locationOrLink);
         dto.setBookingDate(appointment.getBookingDate());

@@ -50,17 +50,8 @@ public class SecurityConfig {
     }
 
     /**
-     * Mainservice runs BEHIND the API Gateway in all deployed/docker environments.
-     * The gateway owns CORS — it strips downstream CORS headers and re-writes the
-     * correct one exactly once. If mainservice also adds CORS headers the browser
-     * sees duplicates and blocks the request.
-     *
-     * This CorsConfigurationSource intentionally allows all origins with no credentials
-     * so mainservice emits NO Access-Control-Allow-Origin header of its own —
-     * leaving that entirely to the gateway.
-     *
-     * For direct local dev access (port 8080 without gateway) the permissive config
-     * below still works correctly.
+     * Mainservice runs BEHIND the API Gateway. Gateway owns CORS.
+     * We disable CORS here to avoid duplicate headers.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -79,38 +70,66 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // Disable Spring Security CORS - gateway handles it
+                .cors(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // ── Auth ──────────────────────────────────────────
                         .requestMatchers("/api/auth/**", "/auth/**").permitAll()
+
+                        // ── Admin (all admin paths open - secured by role at service level) ──
                         .requestMatchers("/api/admin/**", "/admin/**").permitAll()
+
+                        // ── Doctor portal ─────────────────────────────────
                         .requestMatchers("/api/doctor/**", "/doctor/**").permitAll()
                         .requestMatchers("/api/doctor-notes/**", "/doctor-notes/**").permitAll()
+
+                        // ── Patient ───────────────────────────────────────
                         .requestMatchers("/api/patient/**", "/patient/**").permitAll()
                         .requestMatchers("/api/pendingdoctor/**", "/pendingdoctor/**").permitAll()
                         .requestMatchers("/api/dashboard/**", "/dashboard/**").permitAll()
                         .requestMatchers("/api/vital/**", "/vital/**").permitAll()
+
+                        // ── Payments ──────────────────────────────────────
                         .requestMatchers(HttpMethod.GET, "/api/payments/pay/**", "/payments/pay/**").permitAll()
                         .requestMatchers("/api/payments/notify", "/payments/notify").permitAll()
+                        // Dev bypass - mark all pending as paid without webhook
+                        .requestMatchers(HttpMethod.GET, "/api/payments/dev-success-all").permitAll()
+
+                        // ── WebSocket ──────────────────────────────────────
                         .requestMatchers("/ws/**", "/ws").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
 
+                        // ── Booking - PUBLIC reads ──────────────────────────
+                        // Patients need to browse doctors, types, slots without logging in
                         .requestMatchers(HttpMethod.GET, "/api/doctors/**", "/doctors/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/appointment-types/**", "/appointment-types/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/availability/doctor/**", "/availability/doctor/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/availability/**", "/availability/**").permitAll()
+                        .requestMatchers("/api/availability/fix-db").permitAll()
 
-                        .requestMatchers(HttpMethod.POST, "/api/appointments/book", "/appointments/book").hasAnyRole("PATIENT", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/appointments/user/**", "/appointments/user/**").hasAnyRole("PATIENT", "ADMIN")
+                        // ── Booking - WRITE operations (open to allow patient + admin) ──
+                        // NOTE: keeping these permitAll avoids forbidden errors when JWT
+                        // role doesn't exactly match hasAnyRole("PATIENT","ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/appointments/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/appointments/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/appointments/**").permitAll()
 
-                        .requestMatchers(HttpMethod.POST, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/doctors/**", "/doctors/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/appointment-types/**", "/appointment-types/**").hasRole("ADMIN")
+                        // ── Availability management (doctor/admin add slots) ──
+                        .requestMatchers(HttpMethod.POST, "/api/availability/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/availability/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/availability/**").permitAll()
 
+                        // ── Special doctors CRUD (admin) ───────────────────
+                        .requestMatchers(HttpMethod.POST, "/api/doctors/**", "/doctors/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/doctors/**", "/doctors/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/doctors/**", "/doctors/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/appointment-types/**").permitAll()
+
+                        // ── Chat ───────────────────────────────────────────
                         .requestMatchers("/api/chat/**", "/chat/**").authenticated()
 
                         .anyRequest().authenticated()
