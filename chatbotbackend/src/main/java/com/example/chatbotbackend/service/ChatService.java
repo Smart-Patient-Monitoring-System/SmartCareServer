@@ -20,8 +20,8 @@ public class ChatService {
     }
 
     public String getReply(String message) {
-        // gemini-1.5-flash is stable and widely available
-        String model = "gemini-1.5-flash";
+        // gemini-2.5-flash is the currently available stable model
+        String model = "gemini-2.5-flash";
 
         String url = "https://generativelanguage.googleapis.com/v1beta/models/"
                 + model + ":generateContent?key=" + geminiApiKey;
