@@ -20,10 +20,9 @@ public class ChatService {
     }
 
     public String getReply(String message) {
-        // Gemini 2.5 Flash-Lite is the latest ultra-fast model for 2026
-        String model = "gemini-2.5-flash-lite";
+        // gemini-1.5-flash is stable and widely available
+        String model = "gemini-1.5-flash";
 
-        // v1beta is required for 2.5-series and preview models
         String url = "https://generativelanguage.googleapis.com/v1beta/models/"
                 + model + ":generateContent?key=" + geminiApiKey;
 
