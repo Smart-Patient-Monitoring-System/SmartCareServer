@@ -154,6 +154,20 @@ SmartCareServer/
 ├─ vitalReports-AI/
 └─ prometheus/
    └─ prometheus.yml
+
+Screenshots
+<img width="1919" height="919" alt="Screenshot 2026-01-19 111123" src="https://github.com/user-attachments/assets/c08ac43a-da36-4efe-b630-5adefa262466" />
+
+
+<img width="1888" height="906" alt="Screenshot 2026-04-04 230913" src="https://github.com/user-attachments/assets/9a4e527c-df06-4ab6-9057-eb57f54dcd52" />
+
+
+<img width="1889" height="951" alt="Screenshot 2026-04-04 204643" src="https://github.com/user-attachments/assets/a6c8c009-9275-4195-9cad-6465c15b3ac6" />
+
+
+<img width="1919" height="973" alt="Screenshot 2026-03-21 211836" src="https://github.com/user-attachments/assets/ef4e8f80-a8e6-4918-8747-feeb01a213c9" />
+
+
 👩‍💻 Author
 SmartCareServer - Smart Patient Monitoring System
 Developed as a microservices-based university project.
